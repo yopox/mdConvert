@@ -8,48 +8,62 @@ import re,sys
 itemdeep = 0
 
 def parse(chaine):
-    chaine = re.sub(r"[*]{2}(?P<g>(.*))[*]{2}", r"\\textbf{\g<g>}", chaine)
-    chaine = re.sub(r"_(?P<g>(.*))_", r"\\textit{\g<g>}", chaine)
+    # Bold
+    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
+    # Italic
+    chaine = re.sub(r"_(?P<g>(.[^_]*))_", r"\\textit{\g<g>}", chaine)
+    # Strikethrough
+    chaine = re.sub(r"[~~](?P<g>(.[^~~]*))[~~]", r"\\cancel{\g<g>}", chaine)
+    # New line in a paragraph
     chaine = re.sub(r"[ ]*<br>", r" \\newline", chaine)
+    # Remove decoration
     chaine = re.sub(r"\* \* \*", r"", chaine)
+    # Subsections
     chaine = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", chaine)
+    # Ocaml specific code block
     chaine = re.sub(r"[`]{3}[O|o](?P<g>(.*))", r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
+    # Raw code block (no color)
     chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
+    # Generic code block
     chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))", r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
+    # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
     global itemdeep
 
+    # Main items
     if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
         if itemdeep == 0:
             itemdeep = 1
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\begin{itemize}\n\\item \g<g>", chaine)
+            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
         elif itemdeep > 1:
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\end{itemize}\n\\item \g<g>", chaine)
+            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\n\\end{itemize}\n\n\\item \g<g>", chaine)
             itemdeep = 1
         else:
             chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
-
+    # Subitems
     elif re.match(r"^( {4})-[ ]*(?P<g>(.*))", chaine):
         if itemdeep == 1:
-            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))", r"\\begin{itemize}\n\\item \g<g>", chaine)
+            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
             itemdeep = 2
         else:
             chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
-
+    # End list environment
     elif re.match(r"^[a-zA-Z]*", chaine) and itemdeep > 0 and chaine != "\n":
         while itemdeep > 0:
-            chaine = "\end{itemize}" + chaine
+            chaine = "\n\n\end{itemize}\n\n" + chaine
             itemdeep -= 1
 
+    # TODO: Numeral lists
     # elif re.match(r"^-[ ]*(?P<g>(.*))", chaine):
     # chaine = re.sub(r"^[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
     # chaine = re.sub(r"^( {4})[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
+
     return chaine
 
 s1 =  r"""\documentclass{report}
@@ -60,6 +74,7 @@ s1 =  r"""\documentclass{report}
 \usepackage{amssymb}
 \usepackage{listings}
 \usepackage{enumerate}
+\usepackage{cancel}
 \usepackage{mathrsfs}"""
 
 s2 = r"""\begin{document}
@@ -97,9 +112,13 @@ if __name__ == '__main__' :
         output.write("\n")
 
         chaine = r""
+        parse1 = []
 
         for line in inputFile:
             chaine += parse(line)
+
+        # Format line breaks
+        chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
 
         output.write(chaine)
 
@@ -109,5 +128,6 @@ if __name__ == '__main__' :
         inputFile.close()
         output.close()
 
-    else :                          # If no entry specified
+    # If no entry specified
+    else :
         print('Usage : main.py input output')
