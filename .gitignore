@@ -1,4 +1,13 @@
-
 *.md
-
 *.tex
+output/
+
+*.aux
+
+*.log
+
+*.pdf
+
+*.gz
+
+*.toc
