@@ -1,7 +1,0 @@
-\select@language {french}
-\contentsline {chapter}{\numberline {1}Soumission et servitude}{2}
-\contentsline {paragraph}{Relation homme / femme.}{2}
-\contentsline {paragraph}{Rapport Homme / Dieu}{2}
-\contentsline {paragraph}{Rapport Hommes / Autorit\IeC {\'e}s}{2}
-\contentsline {paragraph}{\IeC {\'E}chapper \IeC {\`a} la servitude dans les \textit {Lettres persanes}}{5}
-\contentsline {paragraph}{\IeC {\'E}chapper \IeC {\`a} la servitude dans \textit {Une maison de poup\IeC {\'e}e}}{5}

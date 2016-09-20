@@ -1,13 +1,15 @@
 *.md
+
 *.tex
-output/
 
-*.aux
+out*
 
-*.log
+output/*
 
-*.pdf
+output.toc
 
-*.gz
+output.synctex.gz
 
-*.toc
+output.pdf
+
+output.log

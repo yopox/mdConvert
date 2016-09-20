@@ -9,11 +9,12 @@ itemdeep = 0
 
 def parse(chaine):
     # Bold
-    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
+    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
-    chaine = re.sub(r"_(?P<g>(.[^_]*))_", r"\\textit{\g<g>}", chaine)
+    if not "$" in chaine: # LaTeX uses _ for indices…
+        chaine = re.sub(r"_(?P<g>(.[^_]*))_", r"\\textit{\g<g>}", chaine)
     # Strikethrough
-    chaine = re.sub(r"[~~](?P<g>(.[^~~]*))[~~]", r"\\cancel{\g<g>}", chaine)
+    chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
     # New line in a paragraph
     chaine = re.sub(r"[ ]*<br>", r" \\newline", chaine)
     # Remove decoration
@@ -74,7 +75,7 @@ s1 =  r"""\documentclass{report}
 \usepackage{amssymb}
 \usepackage{listings}
 \usepackage{enumerate}
-\usepackage{cancel}
+\usepackage{soul}
 \usepackage{mathrsfs}"""
 
 s2 = r"""\begin{document}
