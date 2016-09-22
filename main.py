@@ -19,11 +19,11 @@ itemdeep = 0
 def argTraitement():
     global ARGV
 
-    #input
+    # input
     if len(sys.argv) > 1:
         ARGV['input'] = sys.argv[1]
 
-    #liste des options possibles
+    # liste des options possibles
     options = {
         '-o': 'output',
         '--ouput': 'output',
@@ -31,18 +31,14 @@ def argTraitement():
         '--date': 'date',
         '-a': 'author',
         '--author': 'author',
-        '-t' : 'title',
-        '--title':'title'
+        '-t': 'title',
+        '--title': 'title'
     }
 
-    #traitement des options
-    i = 2
-    while i < len(sys.argv):
+    # traitement des options
+    for i in range(2, len(sys.argv)):
         if sys.argv[i] in options and i + 1 < len(sys.argv):
-            ARGV[options[sys.argv[i]]] = sys.argv[i+1]
-            i += 2
-        else:
-            i += 1
+            ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
 
 
 def parse(chaine):
@@ -151,20 +147,20 @@ if __name__ == '__main__':
     outFile = ARGV['output']
 
     # Fonctionnement général
-    if len(inFile)>0:
+    if len(inFile) > 0:
         inputFile = open(inFile, 'r')
         output = open(outFile, 'w')
 
         output.seek(0)
         output.write(s1)
-        if 'title' in ARGV :
+        if 'title' in ARGV:
             output.write(r"\title{" + ARGV['title'] + "}")
             output.write("\n")
-        if 'date' in ARGV :
+        if 'date' in ARGV:
             output.write(r"\date{" + ARGV['date'] + "}")
             output.write("\n")
-        if 'author' in ARGV :
-            output.write(r"\author{" + ARGV['title'] + "}")
+        if 'author' in ARGV:
+            output.write(r"\author{" + ARGV['author'] + "}")
             output.write("\n")
         output.write(s2)
         output.write("\n")
@@ -188,4 +184,5 @@ if __name__ == '__main__':
 
     # If no entry specified
     else:
-        print('''Usage : main.py input [-o/--output output.tex] [-a/--author "M. Me"] [-d/--date today] [-t/--title "My super title"]''')
+        print(
+            '''Usage : main.py input [-o/--output output.tex] [-a/--author "M. Me"] [-d/--date today] [-t/--title "My super title"]''')
