@@ -6,6 +6,7 @@
 import re,sys
 
 itemdeep = 0
+quote = False
 
 def parse(chaine):
     # Bold
@@ -35,13 +36,27 @@ def parse(chaine):
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
+    # Quotes
+    global quote
+
+    if re.match(r"^>[ ]*(?P<g>.*)", chaine):
+        if quote == False:
+            quote = True
+            chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
+        else:
+            chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", chaine)
+    elif quote == True:
+        quote = False
+        chaine = "\n\n\\end{displayquote}\n\\medskip\n" + chaine
+
+    # Itemize
     global itemdeep
 
     # Main items
     if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
         if itemdeep == 0:
             itemdeep = 1
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
+            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", chaine)
         elif itemdeep > 1:
             chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\n\\end{itemize}\n\n\\item \g<g>", chaine)
             itemdeep = 1
@@ -57,7 +72,7 @@ def parse(chaine):
     # End list environment
     elif re.match(r"^[a-zA-Z]*", chaine) and itemdeep > 0 and chaine != "\n":
         while itemdeep > 0:
-            chaine = "\n\n\end{itemize}\n\n" + chaine
+            chaine = "\n\n\\end{itemize}\n\n" + chaine
             itemdeep -= 1
 
     # TODO: Numeral lists
@@ -76,6 +91,7 @@ s1 =  r"""\documentclass{report}
 \usepackage{listings}
 \usepackage{enumerate}
 \usepackage{soul}
+\usepackage{csquotes}
 \usepackage{mathrsfs}"""
 
 s2 = r"""\begin{document}
