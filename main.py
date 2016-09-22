@@ -2,17 +2,57 @@
 # Little tool to convert Markdown to cool LaTeX documents.
 # Written by YoPox on 09/18/2016
 
-## IMPORT
-import re,sys
+# IMPORT
+import re
+import sys
 
-itemdeep = 0
+global quote, ARGV, itemdeep
+
 quote = False
+ARGV = {
+    'output': "output.tex",
+    'input': ''
+}
+itemdeep = 0
+
+
+def argTraitement():
+    global ARGV
+
+    #input
+    if len(sys.argv) > 1:
+        ARGV['input'] = sys.argv[1]
+
+    #liste des options possibles
+    options = {
+        '-o': 'output',
+        '--ouput': 'output',
+        '-d': 'date',
+        '--date': 'date',
+        '-a': 'author',
+        '--author': 'author',
+        '-t' : 'title',
+        '--title':'title'
+    }
+
+    #traitement des options
+    i = 2
+    while i < len(sys.argv):
+        if sys.argv[i] in options and i + 1 < len(sys.argv):
+            ARGV[options[sys.argv[i]]] = sys.argv[i+1]
+            i += 2
+        else:
+            i += 1
+
 
 def parse(chaine):
+    # déclaration des variables globales
+    global itemdeep, quote
+
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
-    if not "$" in chaine: # LaTeX uses _ for indices…
+    if not "$" in chaine:  # LaTeX uses _ for indices…
         chaine = re.sub(r"_(?P<g>(.[^_]*))_", r"\\textit{\g<g>}", chaine)
     # Strikethrough
     chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
@@ -36,9 +76,6 @@ def parse(chaine):
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
-    # Quotes
-    global quote
-
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
         if quote == False:
             quote = True
@@ -48,9 +85,6 @@ def parse(chaine):
     elif quote == True:
         quote = False
         chaine = "\n\n\\end{displayquote}\n\\medskip\n" + chaine
-
-    # Itemize
-    global itemdeep
 
     # Main items
     if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
@@ -92,39 +126,46 @@ s1 =  r"""\documentclass{report}
 \usepackage{enumerate}
 \usepackage{soul}
 \usepackage{csquotes}
-\usepackage{mathrsfs}"""
+\usepackage{mathrsfs}
 
-s2 = r"""\begin{document}
+"""
+
+s2 = r"""
+
+\begin{document}
 \nocite{*}
 
 \maketitle
 \tableofcontents"""
 
-def tabler(textIn) :
+
+def tabler(textIn):
     pass
 
-## EXECUTION
-if __name__ == '__main__' :
+# EXECUTION
+if __name__ == '__main__':
 
-    # Sortie
-    if len(sys.argv) == 2:            # If no output specified
-        outFile = 'output.tex'        # output.tex' default
-    elif len(sys.argv) > 2:           # If an output is specified
-        outFile = sys.argv[2]         # It is used
+    # Reading the arguments
+    argTraitement()
+    inFile = ARGV['input']
+    outFile = ARGV['output']
 
-    #Fonctionnement général
-    if len(sys.argv) > 1 :            # Entry must be specified
-        inFile = sys.argv[1]          # as first argument
+    # Fonctionnement général
+    if len(inFile)>0:
         inputFile = open(inFile, 'r')
         output = open(outFile, 'w')
 
         output.seek(0)
         output.write(s1)
-        output.write("\n\n")
-        output.write(r"\title{" + input("Title : ") + "}")
-        output.write("\n")
-        output.write(r"\author{" + input("Author : ") + "}")
-        output.write("\n\n")
+        if 'title' in ARGV :
+            output.write(r"\title{" + ARGV['title'] + "}")
+            output.write("\n")
+        if 'date' in ARGV :
+            output.write(r"\date{" + ARGV['date'] + "}")
+            output.write("\n")
+        if 'author' in ARGV :
+            output.write(r"\author{" + ARGV['title'] + "}")
+            output.write("\n")
         output.write(s2)
         output.write("\n")
 
@@ -146,5 +187,5 @@ if __name__ == '__main__' :
         output.close()
 
     # If no entry specified
-    else :
-        print('Usage : main.py input output')
+    else:
+        print('''Usage : main.py input [-o/--output output.tex] [-a/--author "M. Me"] [-d/--date today] [-t/--title "My super title"]''')
