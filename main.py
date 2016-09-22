@@ -40,7 +40,6 @@ def argTraitement():
         if sys.argv[i] in options and i + 1 < len(sys.argv):
             ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
 
-
 def parse(chaine):
     # déclaration des variables globales
     global itemdeep, quote
@@ -112,6 +111,13 @@ def parse(chaine):
 
     return chaine
 
+def globParse(chaine):
+    tableaux = re.findall(r"(\|[^\n|]*)*(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", chaine)
+    if tableaux :
+        print ("il y a un tableau !")
+
+    return chaine
+
 s1 =  r"""\documentclass{report}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -133,10 +139,6 @@ s2 = r"""
 
 \maketitle
 \tableofcontents"""
-
-
-def tabler(textIn):
-    pass
 
 # EXECUTION
 if __name__ == '__main__':
@@ -173,6 +175,7 @@ if __name__ == '__main__':
 
         # Format line breaks
         chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
+        chaine = globParse(chaine)
 
         output.write(chaine)
 
