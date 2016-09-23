@@ -6,10 +6,10 @@ out*
 
 output/*
 
-output.toc
+*.toc
 
-output.synctex.gz
+*.gz
 
-output.pdf
+*.log
 
-output.log
+*.pdf
