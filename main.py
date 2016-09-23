@@ -11,7 +11,9 @@ global quote, ARGV, itemdeep
 quote = False
 ARGV = {
     'output': "output.tex",
-    'input': ''
+    'input': '',
+    'author': '',
+    'title': ''
 }
 itemdeep = 0
 
@@ -39,6 +41,7 @@ def argTraitement():
     for i in range(2, len(sys.argv)):
         if sys.argv[i] in options and i + 1 < len(sys.argv):
             ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
+
 
 def parse(chaine):
     # déclaration des variables globales
@@ -111,9 +114,11 @@ def parse(chaine):
 
     return chaine
 
+
 def globParse(chaine):
-    tableaux = re.findall(r"(\|[^\n|]*)*(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", chaine)
-    if tableaux :
+    tableaux = re.findall(
+        r"(\|[^\n|]*)*(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", chaine)
+    if tableaux:
         print ("il y a un tableau !")
 
     return chaine
@@ -155,14 +160,12 @@ if __name__ == '__main__':
 
         output.seek(0)
         output.write(s1)
-        if 'title' in ARGV:
-            output.write(r"\title{" + ARGV['title'] + "}")
-            output.write("\n")
+        output.write(r"\title{" + ARGV['title'] + "}")
+        output.write("\n")
+        output.write(r"\author{" + ARGV['author'] + "}")
+        output.write("\n")
         if 'date' in ARGV:
             output.write(r"\date{" + ARGV['date'] + "}")
-            output.write("\n")
-        if 'author' in ARGV:
-            output.write(r"\author{" + ARGV['author'] + "}")
             output.write("\n")
         output.write(s2)
         output.write("\n")
