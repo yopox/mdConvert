@@ -114,14 +114,33 @@ def parse(chaine):
 
     return chaine
 
+def replTable(m):
+    # m : match trouvé pour un tableau :
+    # m.group(1) : tableau en entier
+    # m.group(2) : 1ère ligne
+    # m.group(6) : reste du tableau
 
-def globParse(chaine):
-    tableaux = re.findall(
-        r"(\|[^\n|]*)*(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", chaine)
-    if tableaux:
-        print ("il y a un tableau !")
+    firstLine = [ col for col in m.group(2).split("|") if col != ""]
+    nbCol = len(firstLine)
+    result = "\\begin{tabular}{|" + "c|" * nbCol + "}\n\\hline\n"
 
-    return chaine
+    # Première colonne
+    result += firstLine [0]
+    for cell in firstLine[1:]:
+        result += " & " + cell
+    result += "\\\\ \n "
+
+    # Reste
+    for line in m.group(6).split('\n'):
+        tablLine = [ cell for cell in line.split("|") if cell != ""]
+        if tablLine :
+            result += "\\hline \n" + tablLine[0]
+            for i,cell in enumerate(tablLine[1:]):
+                if i < nbCol -1 :
+                    result += " & " + cell
+            result += "\\\\ \n"
+
+    return result + "\\hline \n \\end{tabular} \n"
 
 s1 =  r"""\documentclass{report}
 \usepackage[T1]{fontenc}
@@ -178,8 +197,10 @@ if __name__ == '__main__':
 
         # Format line breaks
         chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
-        chaine = globParse(chaine)
 
+        # Format tables
+        chaine = re.sub(
+            r"(((\|[^\n|]+)*)(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+))", replTable, chaine)
         output.write(chaine)
 
         output.write("\n")
