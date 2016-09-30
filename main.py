@@ -119,6 +119,9 @@ def replTable(m):
     # m.group(1) : tableau en entier
     # m.group(2) : 1ère ligne
     # m.group(6) : reste du tableau
+    
+    # Enlever les tirets superflus : re.sub(r"(?P<a>-+)", r"-", chaine)
+    # Enlever les espaces : re.sub(r"[ ]", r"", chaine)
 
     firstLine = [ col for col in m.group(2).split("|") if col != ""]
     nbCol = len(firstLine)
