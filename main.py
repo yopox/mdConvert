@@ -124,9 +124,6 @@ def replTable(m):
     # pour plus de renseignements : n est a adapter
     # for i in range(n): print(i," : ",m.group(i))
 
-    for i in range(12):
-        print(i, " : ", m.group(i))
-
     firstLine = [col for col in m.group(1).split("|") if col != ""]
     centerLine = [col for col in m.group(5).split("|") if col != ""]
     nbCol = len(firstLine)
