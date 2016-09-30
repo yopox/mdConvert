@@ -47,6 +47,9 @@ def parse(chaine):
     # déclaration des variables globales
     global itemdeep, quote
 
+    # Horyzontal rule
+    chaine = re.sub(r"^[-\*_]{3,}","\\hrulefill\n", chaine)
+
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
@@ -74,6 +77,7 @@ def parse(chaine):
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
+    # Quotes
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
         if quote == False:
             quote = True
@@ -199,6 +203,8 @@ if __name__ == '__main__':
         inputFile = open(inFile, 'r')
         output = open(outFile, 'w')
 
+        print("Traitement de : ", inFile, "...")
+
         output.seek(0)
         output.write(s1)
         output.write(r"\title{" + ARGV['title'] + "}")
@@ -230,6 +236,8 @@ if __name__ == '__main__':
 
         inputFile.close()
         output.close()
+
+        print("LaTeX output file written in :", outFile)
 
     # If no entry specified
     else:
