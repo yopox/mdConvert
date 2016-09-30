@@ -53,6 +53,9 @@ def parse(chaine):
     if "```" in chaine:
         code = not code
 
+    # Horyzontal rule
+    chaine = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", chaine)
+
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
@@ -80,6 +83,13 @@ def parse(chaine):
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
+    # Links
+    if "$" not in chaine:  # Latex math mode uses []()
+        chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", chaine)
+    chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>","\\href{\g<link>}{\g<link>}", chaine)
+    chaine = re.sub(r" (?P<link>https?://[^ ]*) "," \\href{\g<link>}{\g<link>} ", chaine)
+
+    # Quotes
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
         if quote == False:
             quote = True
@@ -129,9 +139,6 @@ def replTable(m):
     # m.group(7) : reste du tableau
     # pour plus de renseignements : n est a adapter
     # for i in range(n): print(i," : ",m.group(i))
-
-    # for i in range(12):
-    #     print(i, " : ", m.group(i))
 
     firstLine = [col for col in m.group(1).split("|") if col != ""]
     centerLine = [col for col in m.group(5).split("|") if col != ""]
@@ -184,6 +191,7 @@ s1 =  r"""\documentclass{report}
 \usepackage{soul}
 \usepackage{csquotes}
 \usepackage{mathrsfs}
+\usepackage{hyperref}
 
 """
 
@@ -207,6 +215,8 @@ if __name__ == '__main__':
     if len(inFile) > 0:
         inputFile = open(inFile, 'r')
         output = open(outFile, 'w')
+
+        print("Traitement de : ", inFile, "...")
 
         output.seek(0)
         output.write(s1)
@@ -239,6 +249,8 @@ if __name__ == '__main__':
 
         inputFile.close()
         output.close()
+
+        print("LaTeX output file written in :", outFile)
 
     # If no entry specified
     else:
