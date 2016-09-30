@@ -128,19 +128,19 @@ def replTable(m):
     result += firstLine [0]
     for cell in firstLine[1:]:
         result += " & " + cell
-    result += "\\\\ \n "
+    result += "\\\\\n "
 
     # Reste
     for line in m.group(6).split('\n'):
         tablLine = [ cell for cell in line.split("|") if cell != ""]
         if tablLine :
-            result += "\\hline \n" + tablLine[0]
+            result += "\\hline\n" + tablLine[0]
             for i,cell in enumerate(tablLine[1:]):
                 if i < nbCol -1 :
                     result += " & " + cell
-            result += "\\\\ \n"
+            result += "\\\\\n"
 
-    return result + "\\hline \n \\end{tabular} \n"
+    return result + "\\hline \n\\end{tabular}\n"
 
 s1 =  r"""\documentclass{report}
 \usepackage[T1]{fontenc}
