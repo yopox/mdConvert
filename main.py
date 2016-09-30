@@ -48,7 +48,7 @@ def parse(chaine):
     global itemdeep, quote
 
     # Horyzontal rule
-    chaine = re.sub(r"^[-\*_]{3,}","\\hrulefill\n", chaine)
+    chaine = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", chaine)
 
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
@@ -76,6 +76,12 @@ def parse(chaine):
     chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))", r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
+
+    # Links
+    if "$" not in chaine:  # Latex math mode uses []()
+        chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", chaine)
+    chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>","\\href{\g<link>}{\g<link>}", chaine)
+    chaine = re.sub(r" (?P<link>https?://[^ ]*) "," \\href{\g<link>}{\g<link>} ", chaine)
 
     # Quotes
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
@@ -179,6 +185,7 @@ s1 =  r"""\documentclass{report}
 \usepackage{soul}
 \usepackage{csquotes}
 \usepackage{mathrsfs}
+\usepackage{hyperref}
 
 """
 
