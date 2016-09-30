@@ -9,6 +9,7 @@ import sys
 global quote, ARGV, itemdeep
 
 quote = False
+code = False
 ARGV = {
     'output': "output.tex",
     'input': '',
@@ -16,7 +17,6 @@ ARGV = {
     'title': ''
 }
 itemdeep = 0
-
 
 def argTraitement():
     global ARGV
@@ -45,15 +45,21 @@ def argTraitement():
 
 def parse(chaine):
     # déclaration des variables globales
-    global itemdeep, quote
+    global itemdeep, quote, code
+
+    if code:
+        chaine = re.sub(r"[é]", r"e", chaine)
+
+    if "```" in chaine:
+        code = not code
 
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
-    if not "$" in chaine:  # LaTeX uses _ for indices…
-        chaine = re.sub(r"_(?P<g>(.[^_]*))_", r"\\textit{\g<g>}", chaine)
-    # Strikethrough
-    chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
+    if not "$" in chaine and not "\[" in chaine and not code:  # LaTeX uses _ for indices…
+        chaine = re.sub(r"[_](?P<g>(.[^_]*))[_]", r"\\textit{\g<g>}", chaine)
+        # Strikethrough
+        chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
     # New line in a paragraph
     chaine = re.sub(r"[ ]*<br>", r" \\newline", chaine)
     # Remove decoration
@@ -114,36 +120,58 @@ def parse(chaine):
 
     return chaine
 
+
 def replTable(m):
     # m : match trouvé pour un tableau :
-    # m.group(1) : tableau en entier
-    # m.group(2) : 1ère ligne
-    # m.group(6) : reste du tableau
-    
-    # Enlever les tirets superflus : re.sub(r"(?P<a>-+)", r"-", chaine)
-    # Enlever les espaces : re.sub(r"[ ]", r"", chaine)
+    # m.group(0) : tableau en entier
+    # m.group(1) : 1ère ligne
+    # m.group(5) : ligne de centrage
+    # m.group(7) : reste du tableau
+    # pour plus de renseignements : n est a adapter
+    # for i in range(n): print(i," : ",m.group(i))
 
-    firstLine = [ col for col in m.group(2).split("|") if col != ""]
+    # for i in range(12):
+    #     print(i, " : ", m.group(i))
+
+    firstLine = [col for col in m.group(1).split("|") if col != ""]
+    centerLine = [col for col in m.group(5).split("|") if col != ""]
     nbCol = len(firstLine)
-    result = "\\begin{tabular}{|" + "c|" * nbCol + "}\n\\hline\n"
+    result = "\\begin{center}\n\\begin{tabular}{|"
+
+    # Traitement du centrage
+    def dispoCell(cell):
+        liste = [char for char in cell if char != " "]
+        if liste[0] == ":" and liste[-1] == ":":
+            return 'c'
+        if liste[-1] == ":":
+            return 'r'
+        return 'l'
+
+    for i in range(nbCol):
+        if i < len(centerLine):
+            result += dispoCell(centerLine[i]) + "|"
+        else:
+            result += "l|"
+
+    result += "}\n\\hline\n"
 
     # Première colonne
-    result += firstLine [0]
+    result += firstLine[0]
     for cell in firstLine[1:]:
         result += " & " + cell
     result += "\\\\\n "
 
     # Reste
-    for line in m.group(6).split('\n'):
-        tablLine = [ cell for cell in line.split("|") if cell != ""]
-        if tablLine :
+    for line in m.group(7).split('\n'):
+        tablLine = [cell for cell in line.split("|") if cell != ""]
+        if tablLine:
             result += "\\hline\n" + tablLine[0]
-            for i,cell in enumerate(tablLine[1:]):
-                if i < nbCol -1 :
+            for i, cell in enumerate(tablLine[1:]):
+                if i < nbCol - 1:
                     result += " & " + cell
             result += "\\\\\n"
 
-    return result + "\\hline \n\\end{tabular}\n"
+    return result + "\\hline \n\\end{tabular}\n\\end{center}\n"
 
 s1 =  r"""\documentclass{report}
 \usepackage[T1]{fontenc}
@@ -203,7 +231,7 @@ if __name__ == '__main__':
 
         # Format tables
         chaine = re.sub(
-            r"(((\|[^\n|]+)*)(\s)*\|?(\s)*\| ?[\*-]{3,} ?\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+))", replTable, chaine)
+            r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)*)\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", replTable, chaine)
         output.write(chaine)
 
         output.write("\n")
