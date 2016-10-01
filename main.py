@@ -9,6 +9,7 @@ import sys
 global quote, ARGV, itemdeep
 
 quote = False
+code = False
 ARGV = {
     'output': "output.tex",
     'input': '',
@@ -16,7 +17,6 @@ ARGV = {
     'title': ''
 }
 itemdeep = 0
-
 
 def argTraitement():
     global ARGV
@@ -45,7 +45,13 @@ def argTraitement():
 
 def parse(chaine):
     # déclaration des variables globales
-    global itemdeep, quote
+    global itemdeep, quote, code
+
+    if code:
+        chaine = re.sub(r"[é]", r"e", chaine)
+
+    if "```" in chaine:
+        code = not code
 
     # Horyzontal rule
     chaine = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", chaine)
@@ -53,10 +59,10 @@ def parse(chaine):
     # Bold
     chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
     # Italic
-    if not "$" in chaine:  # LaTeX uses _ for indices…
+    if not "$" in chaine and not "\[" in chaine and not code:  # LaTeX uses _ for indices…
         chaine = re.sub(r"[_](?P<g>(.[^_]*))[_]", r"\\textit{\g<g>}", chaine)
-    # Strikethrough
-    chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
+        # Strikethrough
+        chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
     # New line in a paragraph
     chaine = re.sub(r"[ ]*<br>", r" \\newline", chaine)
     # Remove decoration
@@ -140,7 +146,7 @@ def replTable(m):
     firstLine = [col for col in m.group(1).split("|") if col != ""]
     centerLine = [col for col in m.group(5).split("|") if col != ""]
     nbCol = len(firstLine)
-    result = "\\begin{tabular}{|"
+    result = "\\begin{center}\n\\begin{tabular}{|"
 
     # Traitement du centrage
     def dispoCell(cell):
@@ -175,7 +181,7 @@ def replTable(m):
                     result += " & " + cell
             result += "\\\\\n"
 
-    return result + "\\hline \n\\end{tabular}\n"
+    return result + "\\hline \n\\end{tabular}\n\\end{center}\n"
 
 s1 =  r"""\documentclass{report}
 \usepackage[T1]{fontenc}
