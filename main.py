@@ -79,8 +79,11 @@ def parse(chaine):
 
     # Links
     if "$" not in chaine:  # Latex math mode uses []()
+        # link like "[This is google](http://www.google.com)"
         chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", chaine)
+    # Links like "<http://www.google.com>"
     chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>","\\href{\g<link>}{\g<link>}", chaine)
+    # Links like " http://www.google.com "
     chaine = re.sub(r" (?P<link>https?://[^ ]*) "," \\href{\g<link>}{\g<link>} ", chaine)
 
     # Quotes
@@ -185,7 +188,8 @@ s1 =  r"""\documentclass{report}
 \usepackage{soul}
 \usepackage{csquotes}
 \usepackage{mathrsfs}
-\usepackage{hyperref}
+\usepackage{hyperref} % liens
+\usepackage[official]{eurosym} % pour le symbole euro
 
 """
 
@@ -229,6 +233,9 @@ if __name__ == '__main__':
 
         for line in inputFile:
             chaine += parse(line)
+
+        # Convert euro symbole to LaTeX command
+        chaine = re.sub(r"€", "\\euro{}", chaine)
 
         # Format line breaks
         chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
