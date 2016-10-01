@@ -90,6 +90,9 @@ def parse(chaine):
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
+    # Comments
+    chaine = re.sub(r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?","% \g<comment>\n", chaine)
+
     # Links
     if "$" not in chaine:  # Latex math mode uses []()
         # link like "[This is google](http://www.google.com)"
