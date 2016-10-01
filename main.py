@@ -16,7 +16,7 @@ ARGV = {
     'author': '',
     'title': '',
     'documentclass': 'report',
-    'tableofcontents':'ON',
+    'tableofcontents': 'ON',
 }
 itemdeep = 0
 
@@ -91,7 +91,7 @@ def parse(chaine):
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
     # Comments
-    chaine = re.sub(r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?","% \g<comment>\n", chaine)
+    chaine = re.sub(r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", chaine)
 
     # Links
     if "$" not in chaine:  # Latex math mode uses []()
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
         # Format tables
         chaine = re.sub(
-            r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)*)\|[ \t]*\n[ \t]*((((\|([^|\n]*))+)\|?[ \t]*\n?)+)", replTable, chaine)
+            r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)+)\|[ \t]*\n[ \t]*((((\|([^|\n]*))*)\|?[ \t]*\n?)+)", replTable, chaine)
         output.write(chaine)
 
         output.write("\n")
