@@ -14,9 +14,12 @@ ARGV = {
     'output': "output.tex",
     'input': '',
     'author': '',
-    'title': ''
+    'title': '',
+    'documentclass': 'report',
+    'tableofcontents':'ON',
 }
 itemdeep = 0
+
 
 def argTraitement():
     global ARGV
@@ -34,7 +37,11 @@ def argTraitement():
         '-a': 'author',
         '--author': 'author',
         '-t': 'title',
-        '--title': 'title'
+        '--title': 'title',
+        '-c': 'documentclass',
+        '--documentclass': 'documentclass',
+        '-T': 'tableofcontents',
+        '--tableofcontents': 'tableofcontents',
     }
 
     # traitement des options
@@ -88,9 +95,9 @@ def parse(chaine):
         # link like "[This is google](http://www.google.com)"
         chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", chaine)
     # Links like "<http://www.google.com>"
-    chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>","\\href{\g<link>}{\g<link>}", chaine)
+    chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", chaine)
     # Links like " http://www.google.com "
-    chaine = re.sub(r" (?P<link>https?://[^ ]*) "," \\href{\g<link>}{\g<link>} ", chaine)
+    chaine = re.sub(r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", chaine)
 
     # Quotes
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
@@ -183,8 +190,7 @@ def replTable(m):
 
     return result + "\\hline \n\\end{tabular}\n\\end{center}\n"
 
-s1 =  r"""\documentclass{report}
-\usepackage[T1]{fontenc}
+s1 =  r"""\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[frenchb]{babel}
 \usepackage{amsmath}
@@ -204,8 +210,7 @@ s2 = r"""
 \begin{document}
 \nocite{*}
 
-\maketitle
-\tableofcontents"""
+\maketitle"""
 
 # EXECUTION
 if __name__ == '__main__':
@@ -223,6 +228,7 @@ if __name__ == '__main__':
         print("Traitement de : ", inFile, "...")
 
         output.seek(0)
+        output.write("\\documentclass{" + ARGV['documentclass'] + "}\n")
         output.write(s1)
         output.write(r"\title{" + ARGV['title'] + "}")
         output.write("\n")
@@ -232,6 +238,8 @@ if __name__ == '__main__':
             output.write(r"\date{" + ARGV['date'] + "}")
             output.write("\n")
         output.write(s2)
+        if ARGV['tableofcontents'] == "ON":
+            output.write("\\tableofcontents\n")
         output.write("\n")
 
         chaine = r""
