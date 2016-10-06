@@ -15,3 +15,5 @@ output/*
 *.pdf
 
 *.aux
+
+*.out

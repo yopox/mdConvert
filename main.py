@@ -64,9 +64,11 @@ def parse(chaine):
     chaine = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", chaine)
 
     # Bold
-    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}", r"\\textbf{\g<g>}", chaine)
+    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}",
+                    r"\\textbf{\g<g>}", chaine)
     # Italic
-    if not "$" in chaine and not "\[" in chaine and not code:  # LaTeX uses _ for indices…
+    # LaTeX uses _ for indices…
+    if not "$" in chaine and not "\[" in chaine and not code:
         chaine = re.sub(r"[_](?P<g>(.[^_]*))[_]", r"\\textit{\g<g>}", chaine)
         # Strikethrough
         chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
@@ -82,31 +84,38 @@ def parse(chaine):
     chaine = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", chaine)
     chaine = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", chaine)
     # Ocaml specific code block
-    chaine = re.sub(r"[`]{3}[O|o](?P<g>(.*))", r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
+    chaine = re.sub(r"[`]{3}[O|o](?P<g>(.*))",
+                    r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
     # Raw code block (no color)
     chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
     # Generic code block
-    chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))", r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
+    chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
+                    r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
     # Code block end
     chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
     # Comments
-    chaine = re.sub(r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", chaine)
+    chaine = re.sub(
+        r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", chaine)
 
     # Links
     if "$" not in chaine:  # Latex math mode uses []()
         # link like "[This is google](http://www.google.com)"
-        chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", chaine)
+        chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""",
+                        "\\href{\g<link>}{\g<text>}", chaine)
     # Links like "<http://www.google.com>"
-    chaine = re.sub(r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", chaine)
+    chaine = re.sub(
+        r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", chaine)
     # Links like " http://www.google.com "
-    chaine = re.sub(r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", chaine)
+    chaine = re.sub(
+        r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", chaine)
 
     # Quotes
     if re.match(r"^>[ ]*(?P<g>.*)", chaine):
         if quote == False:
             quote = True
-            chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
+            chaine = re.sub(
+                r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
         else:
             chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", chaine)
     elif quote == True:
@@ -117,23 +126,27 @@ def parse(chaine):
     if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
         if itemdeep == 0:
             itemdeep = 1
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", chaine)
+            chaine = re.sub(
+                r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", chaine)
         elif itemdeep > 1:
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\n\n\\end{itemize}\n\n\\item \g<g>", chaine)
+            chaine = re.sub(r"^-[ ]*(?P<g>(.*))",
+                            r"\n\n\\end{itemize}\n\n\\item \g<g>", chaine)
             itemdeep = 1
         else:
             chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
     # Subitems
     elif re.match(r"^( {4})-[ ]*(?P<g>(.*))", chaine):
         if itemdeep == 1:
-            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
+            chaine = re.sub(
+                r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
             itemdeep = 2
         else:
-            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
+            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))",
+                            r"\\item \g<g>", chaine)
     # End list environment
     elif re.match(r"^[a-zA-Z]*", chaine) and itemdeep > 0 and chaine != "\n":
         while itemdeep > 0:
-            chaine = "\n\n\\end{itemize}\n\n" + chaine
+            chaine = "\n\n\\end{itemize}\n\\medskip\n" + chaine
             itemdeep -= 1
 
     # TODO: Numeral lists
@@ -209,7 +222,6 @@ s1 =  r"""\usepackage[T1]{fontenc}
 """
 
 s2 = r"""
-
 \begin{document}
 \nocite{*}
 
@@ -255,7 +267,9 @@ if __name__ == '__main__':
         chaine = re.sub(r"€", "\\euro{}", chaine)
 
         # Format line breaks
+        chaine = re.sub(r"\\medskip", r"\n\\medskip\n", chaine)
         chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
+        chaine = re.sub(r"\\medskip[\n]{1,}\\medskip", r"\n\\medskip\n", chaine)
 
         # Format tables
         chaine = re.sub(
