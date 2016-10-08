@@ -10,6 +10,7 @@ global quote, ARGV, itemdeep
 
 quote = False
 code = False
+nonBreakingBlock = False
 ARGV = {
     'output': "output.tex",
     'input': '',
@@ -52,7 +53,7 @@ def argTraitement():
 
 def parse(chaine):
     # déclaration des variables globales
-    global itemdeep, quote, code
+    global itemdeep, quote, code, nonBreakingBlock
 
     if code:
         chaine = re.sub(r"[é]", r"e", chaine)
@@ -88,11 +89,20 @@ def parse(chaine):
                     r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
     # Raw code block (no color)
     chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
+    # Non breaking raw code block (no color)
+    if re.match(r"[`]{3}nbraw", chaine):
+        chaine = re.sub(r"[`]{3}nbraw", r"\\vbox{\n\\begin{lstlisting}", chaine)
+        nonBreakingBlock = True
     # Generic code block
     chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
                     r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
     # Code block end
-    chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
+    if re.match(r"^[`]{3}", chaine):
+        if nonBreakingBlock:
+            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n}\n", chaine)
+            nonBreakingBlock = False
+        else:
+            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
     # Comments
     chaine = re.sub(
