@@ -91,7 +91,7 @@ def parse(chaine):
     chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
     # Non breaking raw code block (no color)
     if re.match(r"[`]{3}nbraw", chaine):
-        chaine = re.sub(r"[`]{3}nbraw", r"\\vbox{\n\\begin{lstlisting}", chaine)
+        chaine = re.sub(r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", chaine)
         nonBreakingBlock = True
     # Generic code block
     chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
@@ -99,7 +99,7 @@ def parse(chaine):
     # Code block end
     if re.match(r"^[`]{3}", chaine):
         if nonBreakingBlock:
-            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n}\n", chaine)
+            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n\end{tabular}\n\\end{figure}\n", chaine)
             nonBreakingBlock = False
         else:
             chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
@@ -264,7 +264,7 @@ if __name__ == '__main__':
             output.write("\n")
         output.write(s2)
         if ARGV['tableofcontents'] == "ON":
-            output.write("\\tableofcontents\n")
+            output.write("\n\\tableofcontents\n")
         output.write("\n")
 
         chaine = r""
