@@ -78,12 +78,13 @@ def parse(chaine):
     # Remove decoration
     chaine = re.sub(r"\* \* \*", r"", chaine)
     # Subsections
-    chaine = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", chaine)
-    chaine = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", chaine)
-    chaine = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", chaine)
-    chaine = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", chaine)
-    chaine = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", chaine)
-    chaine = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", chaine)
+    if not code:
+        chaine = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", chaine)
+        chaine = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", chaine)
+        chaine = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", chaine)
+        chaine = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", chaine)
+        chaine = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", chaine)
+        chaine = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", chaine)
     # Ocaml specific code block
     chaine = re.sub(r"[`]{3}[O|o](?P<g>(.*))",
                     r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
@@ -121,16 +122,17 @@ def parse(chaine):
         r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", chaine)
 
     # Quotes
-    if re.match(r"^>[ ]*(?P<g>.*)", chaine):
-        if quote == False:
-            quote = True
-            chaine = re.sub(
-                r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
-        else:
-            chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", chaine)
-    elif quote == True:
-        quote = False
-        chaine = "\n\n\\end{displayquote}\n\\medskip\n" + chaine
+    if not code:
+        if re.match(r"^>[ ]*(?P<g>.*)", chaine):
+            if quote == False:
+                quote = True
+                chaine = re.sub(
+                    r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
+            else:
+                chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", chaine)
+        elif quote == True:
+            quote = False
+            chaine = "\n\n\\end{displayquote}\n\\medskip\n" + chaine
 
     # Main items
     if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
