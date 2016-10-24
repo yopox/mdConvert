@@ -218,11 +218,40 @@ def replTable(m):
 
     return result + "\\hline \n\\end{tabular}\n\\end{center}\n"
 
+def tree(chaine):
+    __nodes = chaine.split()
+    if len(__nodes) % 2:
+        return ""
+    nodes = [[__nodes[2 * i], __nodes[2 * i + 1]] for i in range(len(__nodes) >> 1)]
+    l = len(nodes)
+    out_str = "\\begin{tikzpicture}[nodes={draw, circle}, ->]\n"
+    def get_tree():
+        def aux(i, depth):
+            t = "\t" * depth
+            if nodes[i][0] == 'F':
+                return (t + "\\node{" + nodes[i][1] + "}", i + 1)
+            else:
+                (g, r1) = aux(i + 1, depth + 1)
+                (d, r2) = aux(r1, depth + 1)
+                if i == 0:
+                    return ("\\node{" + nodes[0][1] + "}\n" + "\tchild{\n" + g + '\n' + "\t}\n" + "\tchild{\n" + d + '\n' + "\t};\n", r2)
+                else:
+                    return (t + "child{\n" + g + '\n' + t + "}\n" + t + "child{\n" + d + '\n' + t + "}\n", r2)
+        (ans, r) = aux(0, 1)
+        if r != l:
+            return ""
+        else:
+            return ans
+    out_str += get_tree() + "\\end{tikzpicture}"
+    return out_str
+
 s1 =  r"""\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[frenchb]{babel}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{graphdrawing.trees}
 \usepackage{listings}
 \usepackage{enumerate}
 \usepackage{soul}
