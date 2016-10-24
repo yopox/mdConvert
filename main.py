@@ -236,13 +236,14 @@ def tree(chaine):
                 if i == 0:
                     return ("\\node{" + nodes[0][1] + "}\n" + "\tchild{\n" + g + '\n' + "\t}\n" + "\tchild{\n" + d + '\n' + "\t};\n", r2)
                 else:
-                    return (t + "child{\n" + g + '\n' + t + "}\n" + t + "child{\n" + d + '\n' + t + "}\n", r2)
+                    return (t + "child{" + ((" \\node{" + nodes[i][1] + "}") if nodes[i][0] == 'N' else "") + "\n" + g + '\n' + t + "}\n" + t + "child{" + ((" \\node{" + nodes[r1][1] + "}") if nodes[r1][0] == 'N' else "") + "\n" + d + '\n' + t + "}\n", r2)
         (ans, r) = aux(0, 1)
         if r != l:
             return ""
         else:
             return ans
     out_str += get_tree() + "\\end{tikzpicture}"
+    print(out_str)
     return out_str
 
 s1 =  r"""\usepackage[T1]{fontenc}
