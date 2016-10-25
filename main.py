@@ -229,58 +229,20 @@ def tree(chaine):
     nodes = [[__nodes[2 * i], __nodes[2 * i + 1]] for i in range(len(__nodes) >> 1)]
     l = len(nodes)
     print(nodes)
-    out_str = "\\begin{tikzpicture}[nodes={draw, circle}, ->]\n"
+    out_str = "\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
     def get_tree():
-        def howmanyleafs(i):
-            def __aux(i):
-                if nodes[i][0] != 'F':
-                    (l1, j) = __aux(i + 1)
-                    (l2, k) = __aux(j)
-                    return (l1 + l2, k)
-                else:
-                    return (1, i + 1)
-            (l1, h) = __aux(i + 1)
-            (l2, _) = __aux(h)
-            return (l1, l2)
-        def spaceratio(i):
-            def __aux(i, depth):
-                if nodes[i][0] != 'F':
-                    (l1, j) = __aux(i + 1, depth + 1)
-                    (l2, k) = __aux(j, depth + 1)
-                    return (int("heujesaispas..."), k)
-                else:
-                    return (1/depth, i + 1)
-            (l1, _) = __aux(i, 0)
-            return l1
         def aux(i, depth):
-            t = "\t" * depth
             if nodes[i][0] == 'F':
-                return (t + "node{" + nodes[i][1] + "}", i + 1)
+                return ('"' + nodes[i][1] + '"', i + 1)
             else:
-                (l1, l2) = howmanyleafs(i)
-                spacing = (t + "child [missing]\n") * (l1 + l2 - 2)
-                #r = spaceratio(i)
-                #spacing = (t + "child [missing]\n") * int(r - 2)
                 (g, r1) = aux(i + 1, depth + 1)
                 (d, r2) = aux(r1, depth + 1)
-                G = t + "child{"
-                D = t + "child{"
-                if nodes[i + 1][0] == 'N':
-                    G += " node{" + nodes[i + 1][1] + "}"
-                if nodes[r1][0] == 'N':
-                    D += " node{" + nodes[r1][1] + "}"
-                G += '\n'
-                D += '\n'
-                F = '\n' + t + "}\n"
-                if i == 0:
-                    return ("\\node{" + nodes[0][1] + "}\n" + G + g + F + spacing + D + d + "\t};\n", r2)
-                else:
-                    return (G + g + F + spacing + D + d + F, r2)
+                return ('"' + nodes[i][1] + '"' + " -- {" + g + "," + d + "}", r2)
         (ans, r) = aux(0, 1)
         if r != l:
             return ""
         else:
-            return re.sub("\n ?\n", "\n", ans)
+            return re.sub("\n ?\n", "\n", ans) + "};\n"
     out_str += get_tree() + "\\end{tikzpicture}"
     print(out_str)
     return out_str
@@ -291,7 +253,8 @@ s1 =  r"""\usepackage[T1]{fontenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
-\usetikzlibrary{graphdrawing.trees}
+\usetikzlibrary{graphs,graphdrawing,arrows.meta}
+\usegdlibrary{trees}
 \usepackage{listings}
 \usepackage{enumerate}
 \usepackage{soul}
