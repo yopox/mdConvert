@@ -105,7 +105,11 @@ def parse(chaine):
         else:
             chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
 
-    # Comments
+    # Trees
+	chaine = re.sub(
+        r"<!\-{2} TREE ([^-]*) \-{2}>[ \t]*\n?", tree, chaine)
+	
+	# Comments
     chaine = re.sub(
         r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", chaine)
 
@@ -219,7 +223,7 @@ def replTable(m):
     return result + "\\hline \n\\end{tabular}\n\\end{center}\n"
 
 def tree(chaine):
-    __nodes = chaine.split()
+    __nodes = chaine.group(1).split()
     if len(__nodes) % 2:
         return ""
     nodes = [[__nodes[2 * i], __nodes[2 * i + 1]] for i in range(len(__nodes) >> 1)]
