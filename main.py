@@ -228,19 +228,29 @@ def tree(chaine):
         return ""
     nodes = [[__nodes[2 * i], __nodes[2 * i + 1]] for i in range(len(__nodes) >> 1)]
     l = len(nodes)
+    print(nodes)
     out_str = "\\begin{tikzpicture}[nodes={draw, circle}, ->]\n"
     def get_tree():
         def aux(i, depth):
             t = "\t" * depth
             if nodes[i][0] == 'F':
-                return (t + "\\node{" + nodes[i][1] + "}", i + 1)
+                return (t + "node{" + nodes[i][1] + "}", i + 1)
             else:
                 (g, r1) = aux(i + 1, depth + 1)
                 (d, r2) = aux(r1, depth + 1)
+                G = t + "child{"
+                D = t + "child{"
+                if nodes[i + 1][0] == 'N':
+                    G += " node{" + nodes[i + 1][1] + "}"
+                if nodes[r1][0] == 'N':
+                    D += " node{" + nodes[r1][1] + "}"
+                G += '\n'
+                D += '\n'
+                F = '\n' + t + "}\n"
                 if i == 0:
-                    return ("\\node{" + nodes[0][1] + "}\n" + "\tchild{\n" + g + '\n' + "\t}\n" + "\tchild{\n" + d + '\n' + "\t};\n", r2)
+                    return ("\\node{" + nodes[0][1] + "}\n" + G + g + F + D + d + "\t};\n", r2)
                 else:
-                    return (t + "child{" + ((" \\node{" + nodes[i][1] + "}") if nodes[i][0] == 'N' else "") + "\n" + g + '\n' + t + "}\n" + t + "child{" + ((" \\node{" + nodes[r1][1] + "}") if nodes[r1][0] == 'N' else "") + "\n" + d + '\n' + t + "}\n", r2)
+                    return (G + g + F + D + d + F, r2)
         (ans, r) = aux(0, 1)
         if r != l:
             return ""
