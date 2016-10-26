@@ -50,127 +50,138 @@ def argTraitement():
         if sys.argv[i] in options and i + 1 < len(sys.argv):
             ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
 
-
-def parse(chaine):
-    # déclaration des variables globales
-    global itemdeep, quote, code, nonBreakingBlock
-
-    if code:
-        chaine = re.sub(r"[é]", r"e", chaine)
-
-    if "```" in chaine:
-        code = not code
-
-    # Horyzontal rule
-    chaine = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", chaine)
-
-    # Bold
-    chaine = re.sub(r"[*]{2}(?P<g>(.[^\*]*))[*]{2}",
-                    r"\\textbf{\g<g>}", chaine)
-    # Italic
-    # LaTeX uses _ for indices…
-    if not "$" in chaine and not "\[" in chaine and not code:
-        chaine = re.sub(r"[_](?P<g>(.[^_]*))[_]", r"\\textit{\g<g>}", chaine)
-        # Strikethrough
-        chaine = re.sub(r"[~]{2}(?P<g>(.[^~]*))[~]{2}", r"(\g<g>)", chaine)
-    # New line in a paragraph
-    chaine = re.sub(r"[ ]*<br>", r" \\newline", chaine)
-    # Remove decoration
-    chaine = re.sub(r"\* \* \*", r"", chaine)
-    # Subsections
-    if not code:
-        chaine = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", chaine)
-        chaine = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", chaine)
-        chaine = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", chaine)
-        chaine = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", chaine)
-        chaine = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", chaine)
-        chaine = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", chaine)
-    # Ocaml specific code block
-    chaine = re.sub(r"[`]{3}[O|o](?P<g>(.*))",
-                    r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
-    # Raw code block (no color)
-    chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
-    # Non breaking raw code block (no color)
-    if re.match(r"[`]{3}nbraw", chaine):
-        chaine = re.sub(r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", chaine)
-        nonBreakingBlock = True
-    # Generic code block
-    chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
-                    r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", chaine)
-    # Code block end
-    if re.match(r"^[`]{3}", chaine):
-        if nonBreakingBlock:
-            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n\end{tabular}\n\\end{figure}\n", chaine)
-            nonBreakingBlock = False
-        else:
-            chaine = re.sub(r"^[`]{3}", r"\\end{lstlisting}", chaine)
-
-    # Trees
-    chaine = re.sub(
-        r"<!\-{2} TREE ([^-]*) \-{2}>[ \t]*\n?", tree, chaine)
-    
-    # Comments
-    chaine = re.sub(
-        r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", chaine)
-
-    # Links
-    if "$" not in chaine:  # Latex math mode uses []()
-        # link like "[This is google](http://www.google.com)"
-        chaine = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""",
-                        "\\href{\g<link>}{\g<text>}", chaine)
-    # Links like "<http://www.google.com>"
-    chaine = re.sub(
-        r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", chaine)
-    # Links like " http://www.google.com "
-    chaine = re.sub(
-        r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", chaine)
-
-    # Quotes
-    if not code:
-        if re.match(r"^>[ ]*(?P<g>.*)", chaine):
-            if quote == False:
-                quote = True
-                chaine = re.sub(
-                    r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", chaine)
+def parse_block_code(paragraph):
+        #TODO
+        paragraph = re.sub(r"[é]", r"e", paragraph)
+        # Ocaml specific code block
+        paragraph = re.sub(r"[`]{3}[O|o](?P<g>(.*))",
+                        r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", paragraph)
+        # Raw code block (no color)
+        paragraph = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", paragraph)
+        # Non breaking raw code block (no color)
+        if re.match(r"[`]{3}nbraw", paragraph):
+            paragraph = re.sub(r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", paragraph)
+            nonBreakingBlock = True
+        # Generic code block
+        paragraph = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
+                        r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", paragraph)
+        # Code block end
+        if re.match(r"^[`]{3}", paragraph):
+            if nonBreakingBlock:
+                paragraph = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n\end{tabular}\n\\end{figure}\n", paragraph)
+                nonBreakingBlock = False
             else:
-                chaine = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", chaine)
-        elif quote == True:
-            quote = False
-            chaine = "\n\n\\end{displayquote}\n\\medskip\n" + chaine
+                paragraph = re.sub(r"^[`]{3}", r"\\end{lstlisting}", paragraph)
 
-    # Main items
-    if re.match(r"^-[ ]*(?P<g>(.*))", chaine):
-        if itemdeep == 0:
-            itemdeep = 1
-            chaine = re.sub(
-                r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", chaine)
-        elif itemdeep > 1:
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))",
-                            r"\n\n\\end{itemize}\n\n\\item \g<g>", chaine)
-            itemdeep = 1
-        else:
-            chaine = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
-    # Subitems
-    elif re.match(r"^( {4})-[ ]*(?P<g>(.*))", chaine):
-        if itemdeep == 1:
-            chaine = re.sub(
-                r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", chaine)
-            itemdeep = 2
-        else:
-            chaine = re.sub(r"^( {4})-[ ]*(?P<g>(.*))",
-                            r"\\item \g<g>", chaine)
-    # End list environment
-    elif re.match(r"^[a-zA-Z]*", chaine) and itemdeep > 0 and chaine != "\n":
-        while itemdeep > 0:
-            chaine = "\n\n\\end{itemize}\n\\medskip\n" + chaine
-            itemdeep -= 1
+
+def parse(paragraph):
+    if paragraph[0] = '`':
+        paragraph = re.sub(r"`(?P<code>)`", r"\\verb`\g<code>`")
+    else:
+        paragraph = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", paragraph)
+        paragraph = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", paragraph)
+        paragraph = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", paragraph)
+        paragraph = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", paragraph)
+        paragraph = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", paragraph)
+        paragraph = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", paragraph)
+
+        # Horizontal line
+        paragraph = re.sub(r"^[-\*_]{3,}", "\\hrulefill\n", paragraph)
+
+        # Remove decoration
+        paragraph = re.sub(r"\* \* \*", r"", paragraph)
+
+        #### Distinguishing LaTeX from normal text
+        fragments = re.split(r"(\$(?:(?!\$)(?:.|\n))*\$|\\\[(?:(?!(?:\\[|\\]))(?:.|\n))*\\\])", paragraph)
+        paragraph = ""
+
+        for fragment in fragments:
+            if fragment[0] not in (r'$', r'\['):
+                # Bold
+                fragment = re.sub(r"\*\*(?P<bold>(?:(?!\*\*)(?:.|\n))*)\*\*",
+                                   r"\\textbf{\g<bold>}", fragment)
+                # Italic
+                fragment = re.sub(r"_(?P<it>(?:(?!_)(?:.|\n))*)_",
+                                   r"\\textbf{\g<it>}", fragment)
+                # Strikethrough
+                fragment = re.sub(r"[~]{2}(?P<strike>(.[^~]*))[~]{2}", r"(\g<strike>)", fragment)
+
+                # Links
+                # LaTeX math mode uses []()
+                # Links like "[This is google](http://www.google.com)"
+                paragraph = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""",
+                                "\\href{\g<link>}{\g<text>}", paragraph)
+                # Links like "<http://www.google.com>"
+                paragraph = re.sub(
+                    r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", paragraph)
+                # Links like " http://www.google.com "
+                paragraph = re.sub(
+                    r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", paragraph)
+
+        # Reassembling fragments
+        for fragment in fragments:
+            paragraph += fragment
+
+        # New line
+        paragraph = re.sub(r"[ ]*<br>", r" \\newline", paragraph)
+        
+        # Trees
+        paragraph = re.sub(
+            r"<!\-{2} TREE ([^-]*) \-{2}>[ \t]*\n?", tree, paragraph)
+        
+        # Comments
+        paragraph = re.sub(
+            r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", paragraph)
+
+        # Quotes
+        #TODO
+        if not code:
+            if re.match(r"^>[ ]*(?P<g>.*)", paragraph):
+                if quote == False:
+                    quote = True
+                    paragraph = re.sub(
+                        r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", paragraph)
+                else:
+                    paragraph = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", paragraph)
+            elif quote == True:
+                quote = False
+                paragraph = "\n\n\\end{displayquote}\n\\medskip\n" + paragraph
+
+        # Itemize
+        #TODO
+        # Main items
+        if re.match(r"^-[ ]*(?P<g>(.*))", paragraph):
+            if itemdeep == 0:
+                itemdeep = 1
+                paragraph = re.sub(
+                    r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", paragraph)
+            elif itemdeep > 1:
+                paragraph = re.sub(r"^-[ ]*(?P<g>(.*))",
+                                r"\n\n\\end{itemize}\n\n\\item \g<g>", paragraph)
+                itemdeep = 1
+            else:
+                paragraph = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
+        # Subitems
+        elif re.match(r"^( {4})-[ ]*(?P<g>(.*))", paragraph):
+            if itemdeep == 1:
+                paragraph = re.sub(
+                    r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", paragraph)
+                itemdeep = 2
+            else:
+                paragraph = re.sub(r"^( {4})-[ ]*(?P<g>(.*))",
+                                r"\\item \g<g>", paragraph)
+        # End list environment
+        elif re.match(r"^[a-zA-Z]*", paragraph) and itemdeep > 0 and paragraph != "\n":
+            while itemdeep > 0:
+                paragraph = "\n\n\\end{itemize}\n\\medskip\n" + paragraph
+                itemdeep -= 1
 
     # TODO: Numeral lists
-    # elif re.match(r"^-[ ]*(?P<g>(.*))", chaine):
-    # chaine = re.sub(r"^[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
-    # chaine = re.sub(r"^( {4})[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", chaine)
+    # elif re.match(r"^-[ ]*(?P<g>(.*))", paragraph):
+    # paragraph = re.sub(r"^[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
+    # paragraph = re.sub(r"^( {4})[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
 
-    return chaine
+    return paragraph
 
 
 def replTable(m):
@@ -302,10 +313,35 @@ if __name__ == '__main__':
         output.write("\n")
 
         chaine = r""
-        parse1 = []
+        
+        content = inputFile.read()
+        paragraphs = re.split(r"(#+ [^\n]*(?:(?!\n#+ )(?:.|\n))*)", content)
+        splitted_paragraphs = [] * len(paragraphs)
+        while '' in splitted_paragraphs:
+            splitted_paragraphs.remove('')
+        for i in range(len(paragraphs)):
+            splitted_paragraphs[i] = re.split(r"```((?:[^\n])*)\n((?:(?!```).*\n*)*)\n```", paragraph[i])
 
-        for line in inputFile:
-            chaine += parse(line)
+        for pieces in splitted_paragraphs:
+            n = len(pieces)
+            if pieces[-1] = '' and n % 3 = 1:
+                del pieces[-1]
+            for i in range(0, n, 3):
+                pieces[i] = re.split(r"(`(?:(?!`).)*`)", pieces[i])
+                for little_piece in pieces[i]:
+                    little_piece = parse(little_piece)
+            for i in range(1, n, 3):
+                pieces[i + 1] = parse_block_code(pieces[i], pieces[i + 1])
+                pieces[i] = ''
+
+        for pieces in splitted_paragraphs:
+            for piece in pieces:
+                if type(piece) is list:
+                    for little_piece in piece:
+                        chaine += little_piece
+                else:
+                    chaine += piece
+
 
         # Convert euro symbole to LaTeX command
         chaine = re.sub(r"€", "\\euro{}", chaine)
