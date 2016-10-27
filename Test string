@@ -1,0 +1,45 @@
+Texte :
+
+
+# Titre qui pète
+## Sous-titre
+Ceci est **une _chaine test** un ~~peu~~ vilaine_ qui utilise
+    - les itemize
+	  sur plusieurs lignes
+    - les _italiques_
+        - Des indentations
+            - Un peu grandes
+                - Du code : `Hello World`
+Mais aussi des
+    1. Enumerate
+    2. (oui oui)
+    3. yes yes
+        1. Des **maths** : $\forall x\in\mathbb{R}, x > 0$ (_théorème HX2_)
+        3. yoyoyo
+           sur plusieurs lignes lol
+urfjkkkoe ça marche
+			testestest
+						7.lol
+            1. oups
+        4. yoyoyo lol
+           jfdkehgfjd
+    4. fhj
+
+## Some more
+Et des citations, car comme dirait l'autre,
+> Lorem ipsum.......
+> Deuxième citation
+> **Trois**_ième_ ?
+
+```
+print("Bonjour !")
+```
+<!-- TREE N 1 F 2 F 3 -->
+Et pour finir **du gras
+sur _plusieurs_
+lignes**
+
+
+Version avec \n :
+
+"""# Titre qui pète\n## Sous-titre\nCeci est **une _chaine test** un ~~peu~~ vilaine_ qui utilise\n    - les itemize\n      sur plusieurs lignes\n    - les _italiques_\n        - Des indentations\n            - Un peu grandes\n                - Du code : `Hello World`\nMais aussi des\n    1. Enumerate\n    2. (oui oui)\n    3. yes yes\n        1. Des **maths** : $\\forall x\in\mathbb{R}, x > 0$ (_théorème HX2_)\n        3. yoyoyo\n           sur plusieurs lignes lol\nurfjkkkoe ça marche\n            testestest\n                        7.lol\n            1. oups\n        4. yoyoyo lol\n           jfdkehgfjd\n    4. fhj\n\n## Some more\nEt des citations, car comme dirait l'autre,\n> Lorem ipsum.......\n> Deuxième citation\n> **Trois**_ième_ ?\n\n```\nprint("Bonjour !")\n```\n<!-- TREE N 1 F 2 F 3 -->\nEt pour finir **du gras\nsur _plusieurs_\nlignes**"""
