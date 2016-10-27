@@ -97,13 +97,38 @@ def parse(paragraph):
         for i in range(len(fragments)):
             if fragments[i][0] not in (r'$', r'\['):
                 # Bold
-                fragments[i] = re.sub(r"\*\*(?P<bold>(?:(?!\*\*)(?:.|\n))*)\*\*",
-                                   r"\\textbf{\g<bold>}", fragments[i])
+                def bolden(matchObj):
+                    bold = matchObj.goup('bold')
+                    if r"\begin" not in bold and r"\end" not in bold:
+                        if len(re.findall("^_((?!(?:_))[^ ])|(?:(?!(?:_))[ \n])_(?:(?!(?:_))[^ ])|(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))[ \n])", bold)) % 2 and
+                           len(re.findall("^~~((?!(?:~~))[^ ])|(?:(?!(?:~~))[ \n])~~(?:(?!(?:~~))[^ ])|(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))[ \n])", bold)) % 2:
+                           return r"\textbf{" + bold + "}"
+                    else:
+                        return bold
+                fragments[i] = re.sub(r"(?:\n| )\*\*(?P<bold>(?:(?!\*\*)(?:.|\n))*)\*\*(?:\n| )",
+                                    bolden, fragments[i])
                 # Italic
-                fragments[i] = re.sub(r"_(?P<it>(?:(?!_)(?:.|\n))*)_",
-                                   r"\\textit{\g<it>}", fragments[i])
+                def italien(matchObj):
+                    it = matchObj.goup('it')
+                    if r"\begin" not in it and r"\end" not in it:
+                        if len(re.findall("^\*\*((?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))[ \n])\*\*(?:(?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))[ \n])", it)) % 2 and
+                           len(re.findall("^~~((?!(?:~~))[^ ])|(?:(?!(?:~~))[ \n])~~(?:(?!(?:~~))[^ ])|(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))[ \n])", it)) % 2:
+                           return r"\textbf{" + it + "}"
+                    else:
+                        return it
+                fragments[i] = re.sub(r"(?:\n| )_(?P<it>(?:(?!_)(?:.|\n))*)_(?:\n| )",
+                                    italien, fragments[i]) # So funny
                 # Strikethrough
-                fragments[i] = re.sub(r"[~]{2}(?P<strike>(.[^~]*))[~]{2}", r"(\g<strike>)", fragments[i])
+                def striken(matchObj):
+                    strike = matchObj.goup('strike')
+                    if r"\begin" not in strike and r"\end" not in strike:
+                        if len(re.findall("^\*\*((?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))[ \n])\*\*(?:(?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))[ \n])", strike)) % 2 and
+                           len(re.findall("^_((?!(?:_))[^ ])|(?:(?!(?:_))[ \n])_(?:(?!(?:_))[^ ])|(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))[ \n])", strike)) % 2:
+                           return r"\textbf{" + strike + "}"
+                    else:
+                        return strike
+                fragments[i] = re.sub(r"(?:\n| )~~(?P<strike>(?:(?!~~)(?:.|\n))*)~~(?:\n| )", 
+                                    striken, fragments[i])
 
                 # Links
                 # LaTeX math mode uses []()
