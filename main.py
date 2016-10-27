@@ -75,7 +75,7 @@ def parse_block_code(paragraph):
 
 
 def parse(paragraph):
-    if paragraph[0] = '`':
+    if paragraph[0] == '`':
         paragraph = re.sub(r"`(?P<code>)`", r"\\verb`\g<code>`")
     else:
         paragraph = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", paragraph)
@@ -91,34 +91,34 @@ def parse(paragraph):
         # Remove decoration
         paragraph = re.sub(r"\* \* \*", r"", paragraph)
 
-        #### Distinguishing LaTeX from normal text
+        # Distinguishing LaTeX from normal text
         fragments = re.split(r"(\$(?:(?!\$)(?:.|\n))*\$|\\\[(?:(?!(?:\\[|\\]))(?:.|\n))*\\\])", paragraph)
-        paragraph = ""
 
-        for fragment in fragments:
-            if fragment[0] not in (r'$', r'\['):
+        for i in range(len(fragments)):
+            if fragments[i][0] not in (r'$', r'\['):
                 # Bold
-                fragment = re.sub(r"\*\*(?P<bold>(?:(?!\*\*)(?:.|\n))*)\*\*",
-                                   r"\\textbf{\g<bold>}", fragment)
+                fragments[i] = re.sub(r"\*\*(?P<bold>(?:(?!\*\*)(?:.|\n))*)\*\*",
+                                   r"\\textbf{\g<bold>}", fragments[i])
                 # Italic
-                fragment = re.sub(r"_(?P<it>(?:(?!_)(?:.|\n))*)_",
-                                   r"\\textbf{\g<it>}", fragment)
+                fragments[i] = re.sub(r"_(?P<it>(?:(?!_)(?:.|\n))*)_",
+                                   r"\\textit{\g<it>}", fragments[i])
                 # Strikethrough
-                fragment = re.sub(r"[~]{2}(?P<strike>(.[^~]*))[~]{2}", r"(\g<strike>)", fragment)
+                fragments[i] = re.sub(r"[~]{2}(?P<strike>(.[^~]*))[~]{2}", r"(\g<strike>)", fragments[i])
 
                 # Links
                 # LaTeX math mode uses []()
                 # Links like "[This is google](http://www.google.com)"
-                paragraph = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""",
-                                "\\href{\g<link>}{\g<text>}", paragraph)
+                fragments[i] = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""",
+                                "\\href{\g<link>}{\g<text>}", fragments[i])
                 # Links like "<http://www.google.com>"
-                paragraph = re.sub(
-                    r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", paragraph)
+                fragments[i] = re.sub(
+                    r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", fragments[i])
                 # Links like " http://www.google.com "
-                paragraph = re.sub(
-                    r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", paragraph)
+                fragments[i] = re.sub(
+                    r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", fragments[i])
 
         # Reassembling fragments
+        paragraph = ''
         for fragment in fragments:
             paragraph += fragment
 
@@ -135,36 +135,44 @@ def parse(paragraph):
 
         # Quotes
         def quote_parse(matchObj):
-            out = r"\n\\medskip\n\\begin{displayquote}\n\n"
-            for q in matchObj.groups():
-                out += q + r"\n\n"
+            quotes = matchObj.group(0)
+            quotes = re.sub(r"^\n(?P<remainder>(.*))", r"\g<remainder>", quotes)
+            quotes = re.split("\n> ((?:(?!\n).)*)", quotes)
+            out = "\n\\medskip\n\\begin{displayquote}\n\n"
+            for quote in quotes:
+                if quote != '':
+                    out += quote + "\n\n"
             out += "\\end{displayquote}\n\\medskip\n"
             return out
-        if re.match(r"(?:^>|\n>) *(.)*", paragraph):
-            paragraph = re.sub(
-                r"(?:^>|\n>) ((?:[^\n])*)", quote_parse, paragraph)
+        paragraph = re.sub(
+            r"(?:(?:^>|\n>) (?:(?:[^\n])*))+", quote_parse, paragraph)
 
         # Itemize
-        def itemize_parse(matchObj):
+        def itemize_parse(i, matchObj):
             itemize = matchObj.group(0)
-            itemize = re.sub(r"^\n(?P<remainder>(.*))", r"\g<remainder>")
-            out = r"\\begin{itemize}\n"
-            for item in re.findall(r"(?:^[ ]{4}+|\n[ ]{4}+)-([^\n]*)", itemize):
-                out += r"item[$bullet$] " + item + '\n'
-            itemize += r"\end{itemize]"
+            out = (("    "*i + "- ") if i != 1 else "") + "\\begin{itemize}\n"
+            for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)- ((?:(?!\n[ ]{4,}- )(?:.|\n))*)", itemize):
+                out += (r"\item[$\bullet$] " if item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
+            out += r"\end{itemize}"
+            return out
         for i in range(4, 0, -1):
-            paragraph = re.sub(r"((?:(?:^[ ]{4}+{" + str(i) + r"}|\n[ ]{4}+{" + str(i) + r"})- (?:(?:[^\n])*))+)", itemize_parse, paragraph)
+            #pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})- (?:(?!(?:\n\n|\n[ ]{" + str(4 * i + 4) + r",}- |\n[ ]{0," + str(4 * i - 2) + r"}- ))(?:.|\n))*"
+            pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})- (?:(?!(?:\n\n|\n[ ]{0," + str(4 * i - 2) + r"}- ))(?:.|\n))*"
+            paragraph = re.sub(pattern, lambda x: itemize_parse(i, x), paragraph)
 
         # Enumerate
-        def enumerate_parse(matchObj):
+        def enumerate_parse(i, matchObj):
             enum = matchObj.group(0)
-            enum = re.sub(r"^\n(?P<remainder>(.*))", r"\g<remainder>")
-            out = r"\\begin{enumerate}\n"
-            for num in re.findall(r"(?:^[ ]{4}+|\n[ ]{4}+)[0-9]+\. ([^\n]*)", enum):
-                out += r"item " + item + '\n'
-            enum += r"\end{enumerate]"
+            out = (("    "*i + "1. ") if i != 1 else "") + "\\begin{enumerate}\n"
+            for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)[0-9]+\. ((?:(?!\n[ ]{4,}[0-9]+\. )(?:.|\n))*)", enum):
+                out += (r"\item " if item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
+            out += r"\end{enumerate}"
+            return out
         for i in range(4, 0, -1):
-            paragraph = re.sub(r"((?:(?:^[ ]{4}+{" + str(i) + r"}|\n[ ]{4}+{" + str(i) + r"})[0-9]+\. (?:(?:[^\n])*))+)", enumerate_parse, paragraph)
+            #pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})[0-9]+\. (?:(?!(?:\n\n|\n[ ]{" + str(4 * i + 4) + r",}[0-9]+\. |\n[ ]{0," + str(4 * i - 2) + r"}[0-9]+\. ))(?:.|\n))*"
+            pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})[0-9]+\. (?:(?!(?:\n\n|\n[ ]{0," + str(4 * i - 2) + r"}[0-9]+\. ))(?:.|\n))*"
+            paragraph = re.sub(pattern, lambda x: enumerate_parse(i, x), paragraph)
+        print(paragraph)
     return paragraph
 
 
@@ -314,7 +322,7 @@ if __name__ == '__main__':
         # and parsing all little pieces/pieces
         for pieces in splitted_paragraphs:
             n = len(pieces)
-            if pieces[-1] = '' and n % 3 = 1:
+            if pieces[-1] == '' and n % 3 == 1:
                 del pieces[-1]
             for i in range(0, n, 3):
                 pieces[i] = re.split(r"(`(?:(?!`).)*`)", pieces[i])
