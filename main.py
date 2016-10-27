@@ -134,53 +134,37 @@ def parse(paragraph):
             r"<!(\-{2}(?P<comment>[^-]*)\-{2})*> ?\n?", "% \g<comment>\n", paragraph)
 
         # Quotes
-        #TODO
-        if not code:
-            if re.match(r"^>[ ]*(?P<g>.*)", paragraph):
-                if quote == False:
-                    quote = True
-                    paragraph = re.sub(
-                        r"^>[ ]*(?P<g>.*)", r"\n\\medskip\n\\begin{displayquote}\n\n\g<g>", paragraph)
-                else:
-                    paragraph = re.sub(r"^>[ ]*(?P<g>.*)", r"\g<g>", paragraph)
-            elif quote == True:
-                quote = False
-                paragraph = "\n\n\\end{displayquote}\n\\medskip\n" + paragraph
+        def quote_parse(matchObj):
+            out = r"\n\\medskip\n\\begin{displayquote}\n\n"
+            for q in matchObj.groups():
+                out += q + r"\n\n"
+            out += "\\end{displayquote}\n\\medskip\n"
+            return out
+        if re.match(r"(?:^>|\n>) *(.)*", paragraph):
+            paragraph = re.sub(
+                r"(?:^>|\n>) ((?:[^\n])*)", quote_parse, paragraph)
 
         # Itemize
-        #TODO
-        # Main items
-        if re.match(r"^-[ ]*(?P<g>(.*))", paragraph):
-            if itemdeep == 0:
-                itemdeep = 1
-                paragraph = re.sub(
-                    r"^-[ ]*(?P<g>(.*))", r"\n\\medskip\n\\begin{itemize}\n\n\\item \g<g>", paragraph)
-            elif itemdeep > 1:
-                paragraph = re.sub(r"^-[ ]*(?P<g>(.*))",
-                                r"\n\n\\end{itemize}\n\n\\item \g<g>", paragraph)
-                itemdeep = 1
-            else:
-                paragraph = re.sub(r"^-[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
-        # Subitems
-        elif re.match(r"^( {4})-[ ]*(?P<g>(.*))", paragraph):
-            if itemdeep == 1:
-                paragraph = re.sub(
-                    r"^( {4})-[ ]*(?P<g>(.*))", r"\n\n\\begin{itemize}\n\n\\item \g<g>", paragraph)
-                itemdeep = 2
-            else:
-                paragraph = re.sub(r"^( {4})-[ ]*(?P<g>(.*))",
-                                r"\\item \g<g>", paragraph)
-        # End list environment
-        elif re.match(r"^[a-zA-Z]*", paragraph) and itemdeep > 0 and paragraph != "\n":
-            while itemdeep > 0:
-                paragraph = "\n\n\\end{itemize}\n\\medskip\n" + paragraph
-                itemdeep -= 1
+        def itemize_parse(matchObj):
+            itemize = matchObj.group(0)
+            itemize = re.sub(r"^\n(?P<remainder>(.*))", r"\g<remainder>")
+            out = r"\\begin{itemize}\n"
+            for item in re.findall(r"(?:^[ ]{4}+|\n[ ]{4}+)-([^\n]*)", itemize):
+                out += r"item[$bullet$] " + item + '\n'
+            itemize += r"\end{itemize]"
+        for i in range(4, 0, -1):
+            paragraph = re.sub(r"((?:(?:^[ ]{4}+{" + str(i) + r"}|\n[ ]{4}+{" + str(i) + r"})- (?:(?:[^\n])*))+)", itemize_parse, paragraph)
 
-    # TODO: Numeral lists
-    # elif re.match(r"^-[ ]*(?P<g>(.*))", paragraph):
-    # paragraph = re.sub(r"^[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
-    # paragraph = re.sub(r"^( {4})[0-9]*\.[ ]*(?P<g>(.*))", r"\\item \g<g>", paragraph)
-
+        # Enumerate
+        def enumerate_parse(matchObj):
+            enum = matchObj.group(0)
+            enum = re.sub(r"^\n(?P<remainder>(.*))", r"\g<remainder>")
+            out = r"\\begin{enumerate}\n"
+            for num in re.findall(r"(?:^[ ]{4}+|\n[ ]{4}+)[0-9]+\. ([^\n]*)", enum):
+                out += r"item " + item + '\n'
+            enum += r"\end{enumerate]"
+        for i in range(4, 0, -1):
+            paragraph = re.sub(r"((?:(?:^[ ]{4}+{" + str(i) + r"}|\n[ ]{4}+{" + str(i) + r"})[0-9]+\. (?:(?:[^\n])*))+)", enumerate_parse, paragraph)
     return paragraph
 
 
@@ -315,13 +299,19 @@ if __name__ == '__main__':
         chaine = r""
         
         content = inputFile.read()
+
+        # Creation of paragraphs
         paragraphs = re.split(r"(#+ [^\n]*(?:(?!\n#+ )(?:.|\n))*)", content)
+
+        # Splitting paragraphs into code blocks and non-code blocks
         splitted_paragraphs = [] * len(paragraphs)
         while '' in splitted_paragraphs:
             splitted_paragraphs.remove('')
         for i in range(len(paragraphs)):
             splitted_paragraphs[i] = re.split(r"```((?:[^\n])*)\n((?:(?!```).*\n*)*)\n```", paragraph[i])
 
+        # Splitting pieces of paragraphs into inline code and normal little pieces 
+        # and parsing all little pieces/pieces
         for pieces in splitted_paragraphs:
             n = len(pieces)
             if pieces[-1] = '' and n % 3 = 1:
@@ -334,6 +324,7 @@ if __name__ == '__main__':
                 pieces[i + 1] = parse_block_code(pieces[i], pieces[i + 1])
                 pieces[i] = ''
 
+        # Merging all the stuff
         for pieces in splitted_paragraphs:
             for piece in pieces:
                 if type(piece) is list:
