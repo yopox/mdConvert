@@ -17,7 +17,8 @@ ARGV = {
     'author': '',
     'title': '',
     'documentclass': 'report',
-    'tableofcontents': 'ON',
+    'tableofcontents': True,
+    'help': False,
 }
 itemdeep = 0
 
@@ -30,7 +31,7 @@ def argTraitement():
         ARGV['input'] = sys.argv[1]
 
     # liste des options possibles
-    options = {
+    options_with_args = {
         '-o': 'output',
         '--ouput': 'output',
         '-d': 'date',
@@ -41,14 +42,20 @@ def argTraitement():
         '--title': 'title',
         '-c': 'documentclass',
         '--documentclass': 'documentclass',
+    }
+    options_bools = {
+        '-h': 'help',
+        '--help': 'help',
         '-T': 'tableofcontents',
         '--tableofcontents': 'tableofcontents',
     }
 
     # traitement des options
     for i in range(2, len(sys.argv)):
-        if sys.argv[i] in options and i + 1 < len(sys.argv):
-            ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
+        if sys.argv[i] in options_with_args and i + 1 < len(sys.argv):
+            ARGV[options_with_args[sys.argv[i]]] = sys.argv[i + 1]
+        elif sys.argv[i] in options_bools:
+            ARGV[options_bools[sys.argv[i]]] = True
 
 
 def parse(chaine):
@@ -245,8 +252,20 @@ if __name__ == '__main__':
     inFile = ARGV['input']
     outFile = ARGV['output']
 
+    if ARGV['help']:
+        print("""
+        Usage :
+        \tmain.py input OPTIONS
+        \tmain.py --help
+        Options :
+        \t-t title : shortcut for --title
+        \t--title title : shortcut
+        \t
+        \t
+        """)
+
     # Fonctionnement général
-    if len(inFile) > 0:
+    elif len(inFile) > 0:
         inputFile = open(inFile, 'r')
         output = open(outFile, 'w')
 
@@ -263,8 +282,8 @@ if __name__ == '__main__':
             output.write(r"\date{" + ARGV['date'] + "}")
             output.write("\n")
         output.write(s2)
-        if ARGV['tableofcontents'] == "ON":
-            output.write("\\tableofcontents\n")
+        if ARGV['tableofcontents']:
+            output.write("\\tableofcontents\n\\newpage")
         output.write("\n")
 
         chaine = r""
@@ -297,4 +316,7 @@ if __name__ == '__main__':
     # If no entry specified
     else:
         print(
-            '''Usage : main.py input [-o/--output output.tex] [-a/--author "M. Me"] [-d/--date today] [-t/--title "My super title"]''')
+            '''Usage :
+                \tmain.py input OPTIONS
+                \tmain.py --help
+            ''')
