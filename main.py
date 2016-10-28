@@ -6,11 +6,6 @@
 import re
 import sys
 
-global quote, ARGV, itemdeep
-
-quote = False
-code = False
-nonBreakingBlock = False
 ARGV = {
     'output': "output.tex",
     'input': '',
@@ -19,8 +14,6 @@ ARGV = {
     'documentclass': 'report',
     'tableofcontents': 'ON',
 }
-itemdeep = 0
-
 
 def argTraitement():
     global ARGV
