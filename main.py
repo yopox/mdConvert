@@ -183,7 +183,11 @@ def replTable(m):
     # m.group(1) : 1ère ligne
     # m.group(2) : ligne de centrage
     # m.group(3) : reste du tableau
-    # pour plus de renseignements : https://regex101.com/r/5jM44I/2
+    # pour plus de renseignements : https://regex101.com/r/5jM44I/3
+
+    for i in range(4):
+        print(i, m.group(i))
+    print("end")
 
     firstLine = [col for col in m.group(1).split("|") if col != ""]
     centerLine = [col for col in m.group(2).split("|") if col != ""]
@@ -247,6 +251,10 @@ commentstyle=\color{Gray},
 identifierstyle=\color{NavyBlue},
 numberstyle=\color{Gray},
 numbers=left,
+breaklines=true,
+breakatwhitespace=true,
+breakautoindent=true,
+breakindent=5pt,
 }
 
 """
@@ -306,6 +314,11 @@ if __name__ == '__main__':
             for line in inputFile:
                 chaine += parse(line)
 
+            # Format tables
+            chaine = re.sub(
+                r"([^\n\|]*\|(?:[^\n\|]*\|)*[^\n]*) *\n? *( ?:?-*:?(?: ?\| ?:?-+:? ?)+\|?)((?: *\n? *[^\n\|]*\|(?:[^\n\|]*\|)*[^\n\|]*)*)", replTable, chaine)
+            #https://regex101.com/r/5jM44I/3
+
             # Convert euro symbole to LaTeX command
             chaine = re.sub(r"€", "\\euro{}", chaine)
 
@@ -314,10 +327,6 @@ if __name__ == '__main__':
             chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
             chaine = re.sub(r"\\medskip[\n]{1,}\\medskip", r"\n\\medskip\n", chaine)
 
-            # Format tables
-            chaine = re.sub(
-                r"([^\n\|]*\|(?:[^\n\|]*\|)*[^\n]*)(\s)*( ?-*(?: ?\| ?-+ ?)+)(\s*[^\n\|]*\|(?:[^\n\|]*\|)*[^\n]*)*", replTable, chaine)
-            #https://regex101.com/r/5jM44I/2
             output.write(chaine)
 
             output.write("\n")
