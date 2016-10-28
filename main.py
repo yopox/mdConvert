@@ -181,13 +181,12 @@ def replTable(m):
     # m : match trouvé pour un tableau :
     # m.group(0) : tableau en entier
     # m.group(1) : 1ère ligne
-    # m.group(5) : ligne de centrage
-    # m.group(7) : reste du tableau
-    # pour plus de renseignements : n est a adapter
-    # for i in range(n): print(i," : ",m.group(i))
+    # m.group(2) : ligne de centrage
+    # m.group(3) : reste du tableau
+    # pour plus de renseignements : https://regex101.com/r/5jM44I/2
 
     firstLine = [col for col in m.group(1).split("|") if col != ""]
-    centerLine = [col for col in m.group(5).split("|") if col != ""]
+    centerLine = [col for col in m.group(2).split("|") if col != ""]
     nbCol = len(firstLine)
     result = "\\begin{center}\n\\begin{tabular}{|"
 
@@ -215,7 +214,7 @@ def replTable(m):
     result += "\\\\\n "
 
     # Reste
-    for line in m.group(7).split('\n'):
+    for line in m.group(3).split('\n'):
         tablLine = [cell for cell in line.split("|") if cell != ""]
         if tablLine:
             result += "\\hline\n" + tablLine[0]
@@ -317,7 +316,8 @@ if __name__ == '__main__':
 
             # Format tables
             chaine = re.sub(
-                r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)+)\|[ \t]*\n[ \t]*((((\|([^|\n]*))*)\|?[ \t]*\n?)+)", replTable, chaine)
+                r"([^\n\|]*\|(?:[^\n\|]*\|)*[^\n]*)(\s)*( ?-*(?: ?\| ?-+ ?)+)(\s*[^\n\|]*\|(?:[^\n\|]*\|)*[^\n]*)*", replTable, chaine)
+            #https://regex101.com/r/5jM44I/2
             output.write(chaine)
 
             output.write("\n")
