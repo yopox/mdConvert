@@ -238,6 +238,17 @@ s1 =  r"""\usepackage[T1]{fontenc}
 \usepackage{mathrsfs}
 \usepackage{hyperref} % liens
 \usepackage[official]{eurosym} % pour le symbole euro
+\usepackage[dvipsnames]{xcolor} % for usage of colors
+
+\lstset{
+basicstyle=\ttfamily,
+keywordstyle=\color{RedViolet},
+stringstyle=\color{Green},
+commentstyle=\color{Gray},
+identifierstyle=\color{NavyBlue},
+numberstyle=\color{Gray},
+numbers=left,
+}
 
 """
 

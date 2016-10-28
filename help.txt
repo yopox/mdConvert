@@ -1,0 +1,38 @@
+mdConvert Help
+SimplerVersion
+
+Usage : main.py input OPTIONS   : convert md to LaTeX
+        main.py -h/--help       : show the help page
+
+Options :
+-o output.tex
+--output output.tex
+    File to print the output
+    Default is 'output.tex'
+
+-a "M; Me"
+--author "M. Me"
+    Author to mention on the LaTeX rendering
+    If not specified, not author will be printed
+
+-d today
+--date today
+    Date to mention on the LaTeX rendering
+    Default is today.
+
+-t "My title"
+--title "My title"
+    Title to mention
+    If not specified, not title will be rendered
+
+-c article
+--documentclass article
+    Class for the LaTeX rendering,
+    Default is report
+
+-T
+--tableofcontents
+    Will display a talbe of contents in the LaTeX rendering.
+    Default is False
+
+For more information, see : https://github.com/YoPox/mdConvert/
