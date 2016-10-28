@@ -8,19 +8,56 @@
 import re
 import sys
 
+# # # # # # # # #
+# Documentation #
+# # # # # # # # #
+global doc
+
+doc = """
+mdConvert full version
+
+Usage :
+    main.py <input> <options>
+    main.py --help
+
+Options :    
+    -o : shortcut for --output
+    --ouput <output> : output file name
+
+    -d : shortcut for --date
+    --date <date> : date of the document
+
+    -a : shortcut for --author
+    --author <author> : author of the document
+
+    -t : shortcut for --title
+    --title <title> : title of the document
+
+    -c : shortcut for --documentclass
+    --documentclass <class> : document class
+
+    -p : shortcut for --packages
+    --packages <pcks> : list of additionnal packages with syntax {[options1]{package1},[options2]{package2},...}
+
+    -T : shortcut for --tableofcontents
+    --tableofcontents : if a table of contents is needed
+
+    -m : shortcut for --minted
+    --minted : if the code should be colored with minted (requires Pygments and --shell-escape option to compile)
+"""
+
 # # # # # # # # # # # #
 # Managing arguments  #
 # # # # # # # # # # # #
 global ARGV
 
 ARGV = {
-    'output': "output.tex",
+    'output': '',
     'input': '',
-    'author': '',
-    'title': '',
-    'documentclass': 'report',
+    'documentclass': 'article',
     'tableofcontents': True,
     'help': False,
+    'minted': False,
 }
 
 def arg_treatment():
@@ -45,52 +82,47 @@ def arg_treatment():
         '-p': 'packages',
         '--packages': 'packages'
     }
-    options_bools = {
+    bool_options = {
         '-h': 'help',
         '--help': 'help',
         '-T': 'tableofcontents',
         '--tableofcontents': 'tableofcontents',
+        '-m': 'minted',
+        '--minted': 'minted'
     }
 
     # options treatment
     for i in range(2, len(sys.argv)):
         if sys.argv[i] in options_with_args and i + 1 < len(sys.argv):
             ARGV[options_with_args[sys.argv[i]]] = sys.argv[i + 1]
-        elif sys.argv[i] in options_bools:
+        elif sys.argv[i] in bool_options:
             ARGV[options_bools[sys.argv[i]]] = True
+
+    if ARGV['output'] == '':
+        ARGV['output'] = re.sub(r"(?<!\.)(?<!\.m)(?P<name>(?:(?!\.md$).)+)", r"\g<name>.tex", ARGV['input'])
 
 # # # # # # # # # # #
 # Parsing functions #
 # # # # # # # # # # #
-def parse_block_code(paragraph):
-        #TODO
-        paragraph = re.sub(r"[é]", r"e", paragraph)
-        # Ocaml specific code block
-        paragraph = re.sub(r"[`]{3}[O|o](?P<g>(.*))",
-                        r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", paragraph)
-        # Raw code block (no color)
-        paragraph = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", paragraph)
-        # Non breaking raw code block (no color)
-        if re.match(r"[`]{3}nbraw", paragraph):
-            paragraph = re.sub(r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", paragraph)
-            nonBreakingBlock = True
-        # Generic code block
-        paragraph = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
-                        r"\\lstset{language=\g<g>}\n\\begin{lstlisting}", paragraph)
-        # Code block end
-        if re.match(r"^[`]{3}", paragraph):
-            if nonBreakingBlock:
-                paragraph = re.sub(r"^[`]{3}", r"\\end{lstlisting}\n\end{tabular}\n\\end{figure}\n", paragraph)
-                nonBreakingBlock = False
-            else:
-                paragraph = re.sub(r"^[`]{3}", r"\\end{lstlisting}", paragraph)
-
 def sep_parse_block_code(matchObj, block_codes):
-        #TODO
         code   = matchObj.group('code')
-        option = matchObj.group('option')
-        block_codes.append(code)
-        return r"&é(]'(-è*@|{)" + str(len(block_codes)) + r"&é(]'(-è*@|{)"
+        __option = matchObj.group('option')
+        option = re.sub(r"nb\-(?P<option>.*)", r"\g<option>", __option)
+        non_breaking = __option != option
+        out = ''
+        if non_breaking:
+            out += "\\begin{minipage}{\\linewidth}\n"
+        if option != '':
+            if option.lower() == 'ocaml':
+                option = 'Caml'
+            out += r"\lstset{language=" + option + "}\n"
+        out += "\\begin{lstlisting}\n"
+        out += code
+        out += "\n\\end{lstlisting}"
+        if non_breaking:
+            out += "\\begin{minipage}{\\linewidth}\n"
+        block_codes.append(out)
+        return r"&é(]°(-è*@|{)" + str(len(block_codes)) + r"&é(]°(-è*@|{)"
 
 def sep_parse_inline_code(matchObj, inline_codes):
         code = matchObj.group('code')
@@ -103,9 +135,7 @@ def bolden(matchObj):
             right1 = re.findall(r"(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))\W)", bold)
             left2  = re.findall(r"^_((?!(?:_))[^ ])|(?:(?!(?:_))\W)_(?:(?!(?:_))[^ ])", bold)
             right2 = re.findall(r"(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))\W)", bold)
-            print(left1, left2, right1, right2)
-            if r"\begin" not in bold and r"\end" not in bold and len(left1) == len(right1) and len(left2) == len(right2):
-                print("Bolden has been called with parameter " + bold + " and it is functionnal")
+            if r"\begin" not in bold and r"\end" not in bold and '&' not in bold and len(left1) == len(right1) and len(left2) == len(right2):
                 return r"\textbf{" + bold + "}"
             else:
                 return bold
@@ -116,7 +146,7 @@ def italien(matchObj):
     right1 = re.findall(r"(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))\W)", it)
     left2  = re.findall("^_((?!(?:_))[^ ])|(?:(?!(?:_))\W)_(?:(?!(?:_))[^ ])", it)
     right2 = re.findall("(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))\W)", it)
-    if r"\begin" not in it and r"\end" not in it and len(left1) == len(right1) and len(left2) == len(right2):
+    if r"\begin" not in it and r"\end" not in it and '&' not in it and len(left1) == len(right1) and len(left2) == len(right2):
         return r"\textit{" + it + "}"
     else:
         return it
@@ -127,7 +157,7 @@ def striken(matchObj):
     right1 = re.findall(r"(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))\W)", strike)
     left2  = re.findall("^~~((?!(?:~~))[^ ])|(?:(?!(?:~~))\W)~~(?:(?!(?:~~))[^ ])", strike)
     right2 = re.findall("(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))\W)", strike)
-    if r"\begin" not in strike and r"\end" not in strike and len(left1) == len(right1) and len(left2) == len(right2):
+    if r"\begin" not in strike and r"\end" not in strike and '&' not in strike and len(left1) == len(right1) and len(left2) == len(right2):
         return r"\st{" + strike + "}"
     else:
         return strike
@@ -142,7 +172,6 @@ def tree_parse(matchObj):
         return ""
     nodes = [[__nodes[2 * i], __nodes[2 * i + 1]] for i in range(len(__nodes) >> 1)]
     l = len(nodes)
-    print(nodes)
     out_str = "\n\\begin{center}" if option == 'c' else ""
     out_str += "\n\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
     # The package used to draw trees is TikZ and that requiers LuaLaTeX to compile (the algorithm aiming at computing distance 
@@ -162,7 +191,6 @@ def tree_parse(matchObj):
         else:
             return re.sub("\n ?\n", "\n", ans) + "};\n"
     out_str += get_tree() + "\\end{tikzpicture}\n" + ("\\end{center}\n" if option == 'c' else "")
-    print(out_str)
     return out_str
 
 def quote_parse(matchObj):
@@ -188,7 +216,7 @@ def itemize_parse(i, matchObj):
     # If level is not 1 we add some space and a '-' to make the algorithm believe that the items are normal markdown items when it parses a smaller level
     out = (("    "*i + "- ") if i != 1 else "") + "\\begin{itemize}\n"
     for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)- ((?:(?!\n[ ]{4,}- )(?:.|\n))*)", itemize):
-        out += (r"\item[$\bullet$] " if item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
+        out += (r"\item[$\bullet$] " if item != '' and item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
     out += r"\end{itemize}"
     return out
 
@@ -197,7 +225,7 @@ def enumerate_parse(i, matchObj):
     enum = matchObj.group(0)
     out = (("    "*i + "1. ") if i != 1 else "") + "\\begin{enumerate}\n"
     for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)[0-9]+\. ((?:(?!\n[ ]{4,}[0-9]+\. )(?:.|\n))*)", enum):
-        out += (r"\item " if item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
+        out += (r"\item " if item != '' and item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
     out += r"\end{enumerate}"
     return out
 
@@ -277,7 +305,8 @@ def parse(paragraph):
     paragraph = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", paragraph)
     paragraph = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", paragraph)
     paragraph = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", paragraph)
-    paragraph = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", paragraph)
+    paragraph = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\part{\g<g>}", paragraph)
+
 
     # # # # # # # # # # #
     # Horizontal lines  #
@@ -289,10 +318,10 @@ def parse(paragraph):
 
     # # # # # # # # # # # # #
     # Parsing inline quotes #
-    # Uses non greedy regexp
+    # Uses non greedy regexp with lookbehinds/afters because for example : four o'clock in the mornin' MUSN'T be parsed !
     # Must be improved because "hello ' hello " hello ' generates \say{hello \say{ hello} hello }
-    paragraph = re.sub(r"\"(?P<quote>.*?)\"", r"\say{\g<quote>}", paragraph)
-    paragraph = re.sub(r"'(?P<quote>.*?)'", r"\say{\g<quote>}", paragraph)
+    paragraph = re.sub(r"(?<!\w)\"(?=\w)(?P<quote>.*?)(?<=\w)\"(?!\w)", r"\say{\g<quote>}", paragraph)
+    paragraph = re.sub(r"(?<!\w)'(?=\w)(?P<quote>.*?)(?<=\w)'(?!\w)", r"\say{\g<quote>}", paragraph)
 
     # # # # # # # # # # # # # # # # #
     # Operations on non-LaTeX text  #
@@ -301,25 +330,29 @@ def parse(paragraph):
 
     # Each style has it own function that checks if there are no subtle syntax problems
     for i in range(len(fragments)):
-        # Bold #
-        fragments[i] = re.sub(r"[*]{2}(?! )(?P<bold>(?:(?![*]{2})(?:.|\n))+)(?<! )[*]{2}", bolden, fragments[i])
-        
-        # Italic #
-        fragments[i] = re.sub(r"_(?! )(?P<it>(?:(?!_)(?:.|\n))+)(?<! )_", italien, fragments[i]) # So funny
-        
-        # Strikethrough #
-        fragments[i] = re.sub(r"~~(?! )(?P<strike>(?:(?!~~)(?:.|\n))+)(?<! )~~", striken, fragments[i])
+        if fragments[i] != '' and fragments[i][0] != '$' and fragments[i][0:min(len(fragments[i]), 3)] != '\\[':
+            # Bold #
+            fragments[i] = re.sub(r"[*]{2}(?! )(?P<bold>(?:(?![*]{2})(?:.|\n))+)(?<! )[*]{2}", bolden, fragments[i])
+            
+            # Italic #
+            fragments[i] = re.sub(r"_(?! )(?P<it>(?:(?!_)(?:.|\n))+)(?<! )_", italien, fragments[i]) # So funny
+            
+            # Strikethrough #
+            fragments[i] = re.sub(r"~~(?! )(?P<strike>(?:(?!~~)(?:.|\n))+)(?<! )~~", striken, fragments[i])
 
-        # Links #
+            # Links #
 
-        # Links like "[This is google](http://www.google.com)"
-        fragments[i] = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", fragments[i])
-        
-        # Links like "<http://www.google.com>"
-        fragments[i] = re.sub(r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", fragments[i])
-        
-        # Links like " http://www.google.com "
-        fragments[i] = re.sub(r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", fragments[i])
+            # Links like "[This is google](http://www.google.com)"
+            fragments[i] = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", fragments[i])
+            
+            # Links like "<http://www.google.com>"
+            fragments[i] = re.sub(r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", fragments[i])
+            
+            # Links like " http://www.google.com "
+            fragments[i] = re.sub(r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", fragments[i])
+
+            # Replacing _ by \_
+            fragments[i] = re.sub("_", r"\_", fragments[i])
 
     # Merging fragments
     paragraph = ''
@@ -329,10 +362,15 @@ def parse(paragraph):
     # # # # # # #
     # New line  #
     paragraph = re.sub(r"[ ]*<br>", r" \\newline", paragraph)
-    
+
+    # # # # # # # # # # #
+    # Replacing x by \x #
+    fragments[i] = re.sub("&", r"\&", fragments[i])
+    fragments[i] = re.sub("#", r"\#", fragments[i])
+
     # # # # #
     # Trees #
-    paragraph = re.sub(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->?", tree_parse, paragraph)
+    paragraph = re.sub(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", tree_parse, paragraph)
     
     # # # # # # #
     # Comments  #
@@ -366,44 +404,36 @@ def parse(paragraph):
 
     # # # # # # # # # # # # # #
     # Merging blocks of code  #
-    paragraph = re.sub(r"&é\(\]'\(\-è\*@\|\{\)(?P<i>[0-9]+)&é\(\]'\(\-è\*@\|\{\)", lambda x: merge_block_code(x, block_codes), paragraph)
+    paragraph = re.sub(r"&é\(\]°\(\-è\*@\|\{\)(?P<i>[0-9]+)&é\(\]°\(\-è\*@\|\{\)", lambda x: merge_block_code(x, block_codes), paragraph)
     
     # Printing the result (temporary)
-    print(paragraph)
-
     return paragraph
 
 # # # # #
 # Main  #
 # # # # #
 def main():
-    global ARGV
+    global ARGV, doc
+    if ARGV['help']:
+        print(doc)
+        return 0
 
     # Reading the arguments
-    argTraitement()
+    arg_treatment()
     inFile = ARGV['input']
     outFile = ARGV['output']
 
-    #help
-    if ARGV['help']:
-        print("""
-        Usage :
-        \tmain.py input OPTIONS
-        \tmain.py --help
-        Options :
-        \t-t title : shortcut for --title
-        \t--title title : shortcut
-        \t
-        \t
-        """)
-
     # In case of empty string
     if len(inFile) == 0:
+        print(doc)
         return -1
 
     inputFile = open(inFile, 'r')
     output = open(outFile, 'w')
     output.seek(0)
+
+    # Reading the file
+    contents = inputFile.read()
 
     print("Traitement de : ", inFile, "...")
 
@@ -415,16 +445,20 @@ def main():
     if 'packages' in ARGV:
         temp = ARGV['packages']
         if temp[0] != '{' or temp[-1] != '}':
+            print(doc)
             return -1
         else:
             temp = temp[1:-1]
             additionnal_packages = temp.split(', ')
+
     packages = ["[T1]{fontenc}",
                 "[utf8]{inputenc}",
                 "[frenchb]{babel}",
+                "{fontspec}",
+                "[dvipsnames]{xcolor}",
+                "[a4paper]{geometry}",
                 "{amsmath}",
                 "{amssymb}",
-                "{tikz}",
                 "{listings}",
                 "{enumerate}",
                 "{epigraph}",
@@ -434,12 +468,23 @@ def main():
                 "{hyperref}",
                 "[official]{eurosym}"] + additionnal_packages
 
-    for package in packages:
-        output.write(r"\usepackage" + package + '\n')
+    tikz_needed = re.search(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", contents) is not None
+    if tikz_needed:
+        packages.append('{tikz}')
 
-    # TikZ libraries for trees
-    output.write("\\usetikzlibrary{graphs,graphdrawing,arrows.meta}\n\\usegdlibrary{trees}\n\n")
+    packages = list(set(packages))
+    for i in range(len(packages)):
+        output.write(r"\usepackage" + packages[i] + '\n')
+        if 'tikz' in packages[i]:
+            # TikZ libraries for trees
+            output.write("\\usetikzlibrary{graphs,graphdrawing,arrows.meta}\n\\usegdlibrary{trees}\n")
+        elif 'geometry' in packages[i]:
+            output.write("\\geometry{top=2cm, bottom=2cm, left=3cm, right=3cm}\n")
 
+    # Syntax highliting
+    if '`' in contents:
+        output.write(r"\lstset{basicstyle=\ttfamily,keywordstyle=\color{RedViolet},stringstyle=\color{Green},commentstyle=\color{Gray},identifierstyle=\color{NavyBlue},numberstyle=\color{Gray},numbers=left}"+'\n') 
+    
     # Presentation
     if 'title' in ARGV:
         output.write(r"\title{" + ARGV['title'] + "}\n")
@@ -450,7 +495,9 @@ def main():
 
     output.write("\\begin{document}\n")
     output.write("\\nocite{*}\n")
-    output.write("\\maketitle\n")
+
+    if 'title' in ARGV:
+        output.write("\\maketitle\n")
 
     if ARGV['tableofcontents']:
         output.write("\n\\tableofcontents\n")
@@ -458,9 +505,6 @@ def main():
     
     # Creation of the main string
     main_string = ""
-
-    # Reading the file
-    contents = inputFile.read()
 
     # Creation of paragraphs
     paragraphs = re.split(r"(#+ [^\n]*(?:(?!\n#+ )(?:.|\n))*)", contents)
@@ -494,8 +538,4 @@ if __name__ == '__main__':
     main()
 # If no entry specified
 else:
-   print(
-            '''Usage :
-                \tmain.py input OPTIONS
-                \tmain.py --help
-            ''')
+    print(doc)
