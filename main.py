@@ -110,42 +110,55 @@ def arg_treatment():
 # Parsing functions #
 # # # # # # # # # # #
 def sep_parse_block_code(matchObj, block_codes):
-        code   = matchObj.group('code')
-        __option = matchObj.group('option')
-        option = re.sub(r"nb\-(?P<option>.*)", r"\g<option>", __option)
-        non_breaking = __option != option
-        out = ''
-        if non_breaking:
-            out += "\\begin{minipage}{\\linewidth}\n"
-        if option != '':
-            if option.lower() == 'ocaml':
-                option = 'Caml'
-            out += r"\lstset{language=" + option + "}\n"
-        out += "\\begin{lstlisting}\n"
-        out += code
-        out += "\n\\end{lstlisting}"
-        if non_breaking:
-            out += "\\begin{minipage}{\\linewidth}\n"
-        block_codes.append(out)
-        return r"&é(]°(-è*@|{)" + str(len(block_codes)) + r"&é(]°(-è*@|{)"
+    # Option syntax : "java" if wanted language is java, and "nb-java" if wanted language is java AND non breaking is wanted
+    code   = matchObj.group('code')
+    __option = matchObj.group('option')
+    option = re.sub(r"nb\-(?P<option>.*)", r"\g<option>", __option)
+    non_breaking = __option != option
+    out = ''
+    if non_breaking:
+    # putting the code in a minipage will prevent from page breaking
+        out += "\\begin{minipage}{\\linewidth}\n"
+    if option != '':
+        if option.lower() == 'ocaml':
+        # because lstlisting doesn't know ocaml
+            option = 'Caml'
+        out += r"\lstset{language=" + option + "}\n"
+    out += "\\begin{lstlisting}\n"
+    out += code
+    out += "\n\\end{lstlisting}"
+    if non_breaking:
+        out += "\\begin{minipage}{\\linewidth}\n"
+    block_codes.append(out)
+    # How is going to use &é(]°(-è*@|{) in his document ?...
+    return r"&é(]°(-è*@|{)" + str(len(block_codes)) + r"&é(]°(-è*@|{)"
 
 def sep_parse_inline_code(matchObj, inline_codes):
-        code = matchObj.group('code')
-        inline_codes.append("\\verb`" + code + '`')
-        return r'£%£%§²&' + str(len(inline_codes)) + r'£%£%§²&'
+    code = matchObj.group('code')
+    inline_codes.append("\\verb`" + code + '`')
+    # Again, no one will use £%£%§²& in a document, well... except you maybe ?
+    return r'£%£%§²&' + str(len(inline_codes)) + r'£%£%§²&'
 
 def bolden(matchObj):
-            bold = matchObj.group('bold')
-            left1  = re.findall(r"^~~((?!(?:~~))[^ ])|(?:(?!(?:~~))\W)~~(?:(?!(?:~~))[^ ])", bold)
-            right1 = re.findall(r"(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))\W)", bold)
-            left2  = re.findall(r"^_((?!(?:_))[^ ])|(?:(?!(?:_))\W)_(?:(?!(?:_))[^ ])", bold)
-            right2 = re.findall(r"(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))\W)", bold)
-            if r"\begin" not in bold and r"\end" not in bold and '&' not in bold and len(left1) == len(right1) and len(left2) == len(right2):
-                return r"\textbf{" + bold + "}"
-            else:
-                return bold
+    # All this funny and odd regexp is to treat things like "foo **bar _ foo** bar ~~foo _bar~~"
+    # Example : https://regex101.com/r/CzZFwo/1
+    # On this example (the first regexp which follows) we want to match a beggining of a strikethrough environnement
+    # Once every beggining/end of every different environnement than the current one has been found, we have to check if
+    # there are as many begginings as ends, for each environnement, otherwise we are in a wierd case like above, that's why
+    # length of findall lists are compared
+    # This is the same for each style environnement handled by this program, i.e. **, _ and ~~
+    bold = matchObj.group('bold')
+    left1  = re.findall(r"^~~((?!(?:~~))[^ ])|(?:(?!(?:~~))\W)~~(?:(?!(?:~~))[^ ])", bold)
+    right1 = re.findall(r"(?:(?!(?:~~))[^ ])~~$|(?:(?!(?:~~))[^ ])~~(?:(?!(?:~~))\W)", bold)
+    left2  = re.findall(r"^_((?!(?:_))[^ ])|(?:(?!(?:_))\W)_(?:(?!(?:_))[^ ])", bold)
+    right2 = re.findall(r"(?:(?!(?:_))[^ ])_$|(?:(?!(?:_))[^ ])_(?:(?!(?:_))\W)", bold)
+    if r"\begin" not in bold and r"\end" not in bold and '&' not in bold and len(left1) == len(right1) and len(left2) == len(right2):
+        return r"\textbf{" + bold + "}"
+    else:
+        return bold
         
-def italien(matchObj):
+def italien(matchObj): # italicien ? italicize ?
+    # c.f. bolden()
     it = matchObj.group('it')
     left1  = re.findall(r"^\*\*((?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))\W)\*\*(?:(?!(?:\*\*))[^ ])", it)
     right1 = re.findall(r"(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))\W)", it)
@@ -157,6 +170,7 @@ def italien(matchObj):
         return it
 
 def striken(matchObj):
+    # c.f. bolden()
     strike = matchObj.group('strike')
     left1  = re.findall(r"^\*\*((?!(?:\*\*))[^ ])|(?:(?!(?:\*\*))\W)\*\*(?:(?!(?:\*\*))[^ ])", strike)
     right1 = re.findall(r"(?:(?!(?:\*\*))[^ ])\*\*$|(?:(?!(?:\*\*))[^ ])\*\*(?:(?!(?:\*\*))\W)", strike)
@@ -182,6 +196,7 @@ def tree_parse(matchObj):
     # The package used to draw trees is TikZ and that requiers LuaLaTeX to compile (the algorithm aiming at computing distance 
     # between elements of the graphs is written in Lua)
     # The traversal is a pre-order traversal
+    # If you don't understand that code you should go to math spé in Lycée Henri IV and ask E. T.
     def get_tree():
         def aux(i, depth):
             if nodes[i][0] == 'F':
@@ -202,23 +217,29 @@ def quote_parse(matchObj):
     quotes = matchObj.group('quote')
     quotes = re.split("(?:^|\n)> (.*)", quotes)
     try:
+    # For quotations with a reference
+        print("An epigraph has been found!")
         reference = matchObj.group('reference')
+        out = ''
         for quote in quotes:
             if quote != '':
                 out += quote + r" \\ "
-        return r"\epigraph{" + out + "}" + "{" + reference + "}"
+        return r"\epigraph{" + out[0:-4] + "}" + "{" + reference + "}"
     except:
+    # For quotations without a reference
         out = "\n\\medskip\n\\begin{displayquote}\n"
         for quote in quotes:
             if quote != '':
                 out += quote + r" \\ "
-        out += "\\end{displayquote}\n\\medskip\n"
-    return out
+        return out + "\\end{displayquote}\n\\medskip\n"
 
 def itemize_parse(i, matchObj):
     # i : item depth
     itemize = matchObj.group(0)
-    # If level is not 1 we add some space and a '-' to make the algorithm believe that the items are normal markdown items when it parses a smaller level
+    # If level is not 1 we add some space and a '-' to make the algorithm believe that the items are normal markdown
+    # items when it parses a smaller level
+    # When all levels greater than 1 are parsed, level 1 is parsed normally and that's why everything goes well
+    # This functions does the work for only ONE level, of depth i
     out = (("    "*i + "- ") if i != 1 else "") + "\\begin{itemize}\n"
     for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)- ((?:(?!\n[ ]{4,}- )(?:.|\n))*)", itemize):
         out += (r"\item[$\bullet$] " if item != '' and item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
@@ -324,7 +345,8 @@ def parse(paragraph):
     # # # # # # # # # # # # #
     # Parsing inline quotes #
     # Uses non greedy regexp with lookbehinds/afters because for example : four o'clock in the mornin' MUSN'T be parsed !
-    # Must be improved because "hello ' hello " hello ' generates \say{hello \say{ hello} hello }
+    # One should think "hello 'hello" hello' generates and error but it juste
+    # gives \say{hello \say{hello} hello} which is perfectly correct an renders "hello 'hello' hello" in LaTeX
     paragraph = re.sub(r"(?<!\w)\"(?=\w)(?P<quote>.*?)(?<=\w)\"(?!\w)", r"\say{\g<quote>}", paragraph)
     paragraph = re.sub(r"(?<!\w)'(?=\w)(?P<quote>.*?)(?<=\w)'(?!\w)", r"\say{\g<quote>}", paragraph)
 
@@ -346,17 +368,13 @@ def parse(paragraph):
             fragments[i] = re.sub(r"~~(?! )(?P<strike>(?:(?!~~)(?:.|\n))+)(?<! )~~", striken, fragments[i])
 
             # Links #
-
             # Links like "[This is google](http://www.google.com)"
             fragments[i] = re.sub(r"""\[(?P<text>.*)\]\((?P<link>[^ ]*)( ".*")?\)""", "\\href{\g<link>}{\g<text>}", fragments[i])
-            
             # Links like "<http://www.google.com>"
             fragments[i] = re.sub(r"\<(?P<link>https?://[^ ]*)\>", "\\href{\g<link>}{\g<link>}", fragments[i])
-            
             # Links like " http://www.google.com "
             fragments[i] = re.sub(r" (?P<link>https?://[^ ]*) ", " \\href{\g<link>}{\g<link>} ", fragments[i])
-
-            # Replacing _ by \_
+            # Replacing _ by \_ (only in non-LaTeX parts obviously !)
             fragments[i] = re.sub("_", r"\_", fragments[i])
 
     # Merging fragments
@@ -370,11 +388,13 @@ def parse(paragraph):
 
     # # # # # # # # # # #
     # Replacing x by \x #
+    # when x is a specific key word in LaTeX (and x != _)
     fragments[i] = re.sub("&", r"\&", fragments[i])
     fragments[i] = re.sub("#", r"\#", fragments[i])
 
     # # # # #
     # Trees #
+    # Documentation in function tree_parse()
     paragraph = re.sub(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", tree_parse, paragraph)
     
     # # # # # # #
@@ -383,17 +403,20 @@ def parse(paragraph):
 
     # # # # # #
     # Quotes  #
+    # Documentation in function quote_parse()
     paragraph = re.sub(r"(?P<quote>(?:^>|(?<=\n)>) (?:.|\n(?=> ))*)\n(?:\((?P<reference>.+)\))?", quote_parse, paragraph)
 
     # # # # # #
     # Itemize #
     # Item levels are parsed in the decreasing order
+    # More documentation in function itemize_parse()
     for i in range(4, 0, -1):
         pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})- (?:(?!(?:\n\n|\n[ ]{0," + str(4 * i - 2) + r"}- ))(?:.|\n))*"
         paragraph = re.sub(pattern, lambda x: itemize_parse(i, x), paragraph)
 
     # # # # # # #
     # Enumerate #
+    # Same : more documentation in function parse_itemize()
     for i in range(4, 0, -1):
         pattern = r"(?:^[ ]{" + str(4*i) + r"}|(?<=\n)[ ]{" + str(4*i) + r"})[0-9]+\. (?:(?!(?:\n\n|\n[ ]{0," + str(4 * i - 2) + r"}[0-9]+\. ))(?:.|\n))*"
         paragraph = re.sub(pattern, lambda x: enumerate_parse(i, x), paragraph)
@@ -411,7 +434,6 @@ def parse(paragraph):
     # Merging blocks of code  #
     paragraph = re.sub(r"&é\(\]°\(\-è\*@\|\{\)(?P<i>[0-9]+)&é\(\]°\(\-è\*@\|\{\)", lambda x: merge_block_code(x, block_codes), paragraph)
     
-    # Printing the result (temporary)
     return paragraph
 
 # # # # #
@@ -419,37 +441,44 @@ def parse(paragraph):
 # # # # #
 def main():
     global ARGV, doc
+    # # # # # # # # # # # # # # # # #
+    # Preparing arguments and files #
+    # If some help is asked ?
     if ARGV['help']:
         print(doc)
         return 0
 
-    # Reading the arguments
+    # Treating arguments
     arg_treatment()
     inFile = ARGV['input']
     outFile = ARGV['output']
 
-    # In case of empty string
-    if len(inFile) == 0:
+    # In case of no arguments given
+    if inFile == '':
         print(doc)
         return -1
 
-    inputFile = open(inFile, 'r')
+    # Preparing output file
     output = open(outFile, 'w')
     output.seek(0)
 
-    # Reading the file
+    # Reading the input file
+    inputFile = open(inFile, 'r')
     contents = inputFile.read()
 
-    print("Traitement de : ", inFile, "...")
-
+    # # # # # # # # # # # # # # # #
+    # Writing in the output file  #
     # Document class
     output.write("\\documentclass{" + ARGV['documentclass'] + "}\n")
     
-    # Packages :
+    # Packages
+    # Some packages are loaded by default, the user can ask to load more packages
+    # by putting them in the -p or --packages option
     additionnal_packages = []
     if 'packages' in ARGV:
         temp = ARGV['packages']
         if temp[0] != '{' or temp[-1] != '}':
+        # If the user doesn't know the syntax of argument -p...
             print(doc)
             return -1
         else:
@@ -473,22 +502,25 @@ def main():
                 "{hyperref}",
                 "[official]{eurosym}"] + additionnal_packages
 
+    # If a tree is detected, tikz and his libraries are loaded
+    # Note that this will require LuaLateX to compile !
     tikz_needed = re.search(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", contents) is not None
     if tikz_needed:
         packages.append('{tikz}')
 
-    packages = list(set(packages))
-    for i in range(len(packages)):
-        output.write(r"\usepackage" + packages[i] + '\n')
-        if 'tikz' in packages[i]:
-            # TikZ libraries for trees
+    for package in packages:
+        output.write(r"\usepackage" + package + '\n')
+        if 'tikz' in package:
+        # TikZ libraries for trees
             output.write("\\usetikzlibrary{graphs,graphdrawing,arrows.meta}\n\\usegdlibrary{trees}\n")
-        elif 'geometry' in packages[i]:
+        elif 'geometry' in package:
+        # Changing the margins
             output.write("\\geometry{top=2cm, bottom=2cm, left=3cm, right=3cm}\n")
 
     # Syntax highliting
     if '`' in contents:
-        output.write(r"\lstset{basicstyle=\ttfamily,keywordstyle=\color{RedViolet},stringstyle=\color{Green},commentstyle=\color{Gray},identifierstyle=\color{NavyBlue},numberstyle=\color{Gray},numbers=left}"+'\n') 
+    # If the document is likely to contain a piece of code
+        output.write(r"\lstset{basicstyle=\ttfamily,keywordstyle=\color{RedViolet},stringstyle=\color{Green},commentstyle=\color{Gray},identifierstyle=\color{NavyBlue},numberstyle=\color{Gray},numbers=left,breaklines=true,breakatwhitespace=true,breakautoindent=true,breakindent=5pt}" + '\n') 
     
     # Presentation
     if 'title' in ARGV:
@@ -512,9 +544,11 @@ def main():
     main_string = ""
 
     # Creation of paragraphs
+    # The text is splitted into different paragraphs, which makes the parsing easier
+    # A paragraph begins with some #s and a title
     paragraphs = re.split(r"(#+ [^\n]*(?:(?!\n#+ )(?:.|\n))*)", contents)
 
-    # Parsing every paragraph and add it to the main string
+    # Parsing each paragraph and adding it to the main string
     for paragraph in paragraphs:
         main_string += parse(paragraph)
 
@@ -526,8 +560,10 @@ def main():
     main_string = re.sub(r"[\n]{2,}", r"\n\n", main_string)
     main_string = re.sub(r"\\medskip[\n]{1,}\\medskip", r"\n\\medskip\n", main_string)
 
+    # Writing the main string in the output file
     output.write(main_string)
 
+    # Good by
     output.write("\n\\end{document}")
 
     inputFile.close()
@@ -541,6 +577,5 @@ def main():
 # # # # # # #
 if __name__ == '__main__':
     main()
-# If no entry specified
 else:
     print(doc)
