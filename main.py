@@ -17,7 +17,8 @@ ARGV = {
     'author': '',
     'title': '',
     'documentclass': 'report',
-    'tableofcontents': 'ON',
+    'tableofcontents': False,
+    'help': False,
 }
 itemdeep = 0
 
@@ -26,11 +27,11 @@ def argTraitement():
     global ARGV
 
     # input
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and sys.argv[1][0] != '-':
         ARGV['input'] = sys.argv[1]
 
     # liste des options possibles
-    options = {
+    options_args = {
         '-o': 'output',
         '--ouput': 'output',
         '-d': 'date',
@@ -41,14 +42,20 @@ def argTraitement():
         '--title': 'title',
         '-c': 'documentclass',
         '--documentclass': 'documentclass',
+    }
+    options_bools = {
         '-T': 'tableofcontents',
         '--tableofcontents': 'tableofcontents',
+        '-h': 'help',
+        '--help': 'help',
     }
 
     # traitement des options
-    for i in range(2, len(sys.argv)):
-        if sys.argv[i] in options and i + 1 < len(sys.argv):
+    for i in range(1, len(sys.argv)):
+        if sys.argv[i] in options_args and i + 1 < len(sys.argv):
             ARGV[options[sys.argv[i]]] = sys.argv[i + 1]
+        if sys.argv[i] in options_bools:
+            ARGV[options_bools[sys.argv[i]]] = True
 
 
 def parse(chaine):
@@ -92,7 +99,8 @@ def parse(chaine):
     chaine = re.sub(r"[`]{3}raw", r"\\begin{lstlisting}", chaine)
     # Non breaking raw code block (no color)
     if re.match(r"[`]{3}nbraw", chaine):
-        chaine = re.sub(r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", chaine)
+        chaine = re.sub(
+            r"[`]{3}nbraw", r"\\begin{figure}[!htbp]\n\\centering\n\\begin{tabular}{c}\n\\begin{lstlisting}\n", chaine)
         nonBreakingBlock = True
     # Generic code block
     chaine = re.sub(r"^[`]{3}(?P<g>(.{1,}))",
@@ -239,64 +247,77 @@ s2 = r"""
 
 \maketitle"""
 
+usage = """Usage : main.py input OPTIONS   : convert md to LaTeX
+        main.py -h/--help       : show the help page"""
+
+
 # EXECUTION
 if __name__ == '__main__':
 
     # Reading the arguments
     argTraitement()
-    inFile = ARGV['input']
-    outFile = ARGV['output']
+
+    if ARGV['help']:
+        help_file = open("help.txt", 'r')
+        for line in help_file:
+            print(line, end='')
+        help_file.close()
 
     # Fonctionnement général
-    if len(inFile) > 0:
-        inputFile = open(inFile, 'r')
-        output = open(outFile, 'w')
+    elif len(ARGV['input']) > 0:
+        try:
+            inputFile = open(ARGV['input'], 'r')
+        except FileNotFoundError:
+            print("Fichier non trouvé !")
+            print(usage)
+        else:  # Comportement normal
+            output = open(ARGV['output'], 'w')
 
-        print("Traitement de : ", inFile, "...")
+            print("Traitement de : ", ARGV['input'], "...")
 
-        output.seek(0)
-        output.write("\\documentclass{" + ARGV['documentclass'] + "}\n")
-        output.write(s1)
-        output.write(r"\title{" + ARGV['title'] + "}")
-        output.write("\n")
-        output.write(r"\author{" + ARGV['author'] + "}")
-        output.write("\n")
-        if 'date' in ARGV:
-            output.write(r"\date{" + ARGV['date'] + "}")
+            output.seek(0)
+            output.write("\\documentclass{" + ARGV['documentclass'] + "}\n")
+            output.write(s1)
+            output.write(r"\title{" + ARGV['title'] + "}")
             output.write("\n")
-        output.write(s2)
-        if ARGV['tableofcontents'] == "ON":
-            output.write("\n\\tableofcontents\n")
-        output.write("\n")
+            output.write(r"\author{" + ARGV['author'] + "}")
+            output.write("\n")
+            if 'date' in ARGV:
+                output.write(r"\date{" + ARGV['date'] + "}")
+                output.write("\n")
+            output.write(s2)
+            if ARGV['tableofcontents']:
+                output.write("\n\\tableofcontents\n")
+            output.write("\n")
 
-        chaine = r""
-        parse1 = []
+            chaine = r""
+            parse1 = []
 
-        for line in inputFile:
-            chaine += parse(line)
+            for line in inputFile:
+                chaine += parse(line)
 
-        # Convert euro symbole to LaTeX command
-        chaine = re.sub(r"€", "\\euro{}", chaine)
+            # Convert euro symbole to LaTeX command
+            chaine = re.sub(r"€", "\\euro{}", chaine)
 
-        # Format line breaks
-        chaine = re.sub(r"\\medskip", r"\n\\medskip\n", chaine)
-        chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
-        chaine = re.sub(r"\\medskip[\n]{1,}\\medskip", r"\n\\medskip\n", chaine)
+            # Format line breaks
+            chaine = re.sub(r"\\medskip", r"\n\\medskip\n", chaine)
+            chaine = re.sub(r"[\n]{2,}", r"\n\n", chaine)
+            chaine = re.sub(r"\\medskip[\n]{1,}\\medskip", r"\n\\medskip\n", chaine)
 
-        # Format tables
-        chaine = re.sub(
-            r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)+)\|[ \t]*\n[ \t]*((((\|([^|\n]*))*)\|?[ \t]*\n?)+)", replTable, chaine)
-        output.write(chaine)
+            # Format tables
+            chaine = re.sub(
+                r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)+)\|[ \t]*\n[ \t]*((((\|([^|\n]*))*)\|?[ \t]*\n?)+)", replTable, chaine)
+            output.write(chaine)
 
-        output.write("\n")
-        output.write(r"\end{document}")
+            output.write("\n")
+            output.write(r"\end{document}")
 
-        inputFile.close()
-        output.close()
+            inputFile.close()
+            output.close()
 
-        print("LaTeX output file written in :", outFile)
+            print("LaTeX output file written in :", ARGV['output'])
 
     # If no entry specified
     else:
-        print(
-            '''Usage : main.py input [-o/--output output.tex] [-a/--author "M. Me"] [-d/--date today] [-t/--title "My super title"]''')
+        print("No entry specified.")
+        print(usage)
