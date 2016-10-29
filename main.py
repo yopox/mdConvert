@@ -21,7 +21,7 @@ Usage :
     main.py <input> <options> (normal use of the function, provides a fresh .tex document)
     main.py --help (to get this text exactly)
 
-Options :    
+Options :
     -o : shortcut for --output
     --ouput <output> : output file name (same as input file name by default)
 
@@ -38,7 +38,7 @@ Options :
     --documentclass <class> : document class (article by default)
 
     -p : shortcut for --packages
-    --packages <pcks> : list of additionnal packages with syntax 
+    --packages <pcks> : list of additionnal packages with syntax
                         {[options1]{package1},[options2]{package2},...}
                         (none by default)
 
@@ -59,7 +59,7 @@ global ARGV
 ARGV = {
     'output': '',
     'input': '',
-    'documentclass': 'article',
+    'documentclass': 'report',
     'tableofcontents': True,
     'help': False,
     'minted': False,
@@ -104,7 +104,7 @@ def arg_treatment():
             ARGV[options_bools[sys.argv[i]]] = True
 
     if ARGV['output'] == '':
-        ARGV['output'] = re.sub(r"(?<!\.)(?<!\.m)(?P<name>(?:(?!\.md$).)+)", r"\g<name>.tex", ARGV['input'])
+        ARGV['output'] = re.sub(r"^(?P<name>(?:(?!\.md$).)+)(?:\.md$)?", r"\g<name>.tex", ARGV['input'])
 
 # # # # # # # # # # #
 # Parsing functions #
@@ -156,7 +156,7 @@ def bolden(matchObj):
         return r"\textbf{" + bold + "}"
     else:
         return bold
-        
+
 def italien(matchObj): # italicien ? italicize ?
     # c.f. bolden()
     it = matchObj.group('it')
@@ -182,7 +182,7 @@ def striken(matchObj):
         return strike
 
 def tree_parse(matchObj):
-    # Possible options : 
+    # Possible options :
     #   - c : center
     #   - all for now
     option = matchObj.group('option')
@@ -193,7 +193,7 @@ def tree_parse(matchObj):
     l = len(nodes)
     out_str = "\n\\begin{center}" if option == 'c' else ""
     out_str += "\n\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
-    # The package used to draw trees is TikZ and that requiers LuaLaTeX to compile (the algorithm aiming at computing distance 
+    # The package used to draw trees is TikZ and that requiers LuaLaTeX to compile (the algorithm aiming at computing distance
     # between elements of the graphs is written in Lua)
     # The traversal is a pre-order traversal
     # If you don't understand that code you should go to math spé in Lycée Henri IV and ask E. T.
@@ -309,7 +309,7 @@ def merge_inline_code(matchObj, inline_codes):
 
 def merge_block_code(matchObj, block_codes):
     return block_codes[int(matchObj.group('i')) - 1]
-    
+
 def parse(paragraph):
     # # # # # # # # # # # # # #
     # Parsing blocks of code  #
@@ -326,12 +326,12 @@ def parse(paragraph):
     # # # # # # # # # #
     # Parsing titles  #
     # Each paragraph's string begins with some '#' so regex matches only the string's very beginning
-    paragraph = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subparagraph{\g<g>}", paragraph)
-    paragraph = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\paragraph{\g<g>}", paragraph)
-    paragraph = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\subsubsection{\g<g>}", paragraph)
+    paragraph = re.sub(r"^[#]{6} (?P<g>(.*))", r"\\subsubparagraph{\g<g>}", paragraph)
+    paragraph = re.sub(r"^[#]{5} (?P<g>(.*))", r"\\subparagraph{\g<g>}", paragraph)
+    paragraph = re.sub(r"^[#]{4} (?P<g>(.*))", r"\\paragraph{\g<g>}", paragraph)
     paragraph = re.sub(r"^[#]{3} (?P<g>(.*))", r"\\subsection{\g<g>}", paragraph)
     paragraph = re.sub(r"^[#]{2} (?P<g>(.*))", r"\\section{\g<g>}", paragraph)
-    paragraph = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\part{\g<g>}", paragraph)
+    paragraph = re.sub(r"^[#]{1} (?P<g>(.*))", r"\\chapter{\g<g>}", paragraph)
 
 
     # # # # # # # # # # #
@@ -357,13 +357,13 @@ def parse(paragraph):
 
     # Each style has it own function that checks if there are no subtle syntax problems
     for i in range(len(fragments)):
-        if fragments[i] != '' and fragments[i][0] != '$' and fragments[i][0:min(len(fragments[i]), 3)] != '\\[':
+        if fragments[i] != '' and fragments[i][0] != '$' and fragments[i][0:min(len(fragments[i]), 2)] != "\\[":
             # Bold #
             fragments[i] = re.sub(r"[*]{2}(?! )(?P<bold>(?:(?![*]{2})(?:.|\n))+)(?<! )[*]{2}", bolden, fragments[i])
-            
+
             # Italic #
             fragments[i] = re.sub(r"_(?! )(?P<it>(?:(?!_)(?:.|\n))+)(?<! )_", italien, fragments[i]) # So funny
-            
+
             # Strikethrough #
             fragments[i] = re.sub(r"~~(?! )(?P<strike>(?:(?!~~)(?:.|\n))+)(?<! )~~", striken, fragments[i])
 
@@ -396,7 +396,7 @@ def parse(paragraph):
     # Trees #
     # Documentation in function tree_parse()
     paragraph = re.sub(r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", tree_parse, paragraph)
-    
+
     # # # # # # #
     # Comments  #
     paragraph = re.sub(r"<!\-\-(?P<comment>(?:(?!\-\->).)*)\-\->", "% \g<comment>", paragraph)
@@ -424,8 +424,8 @@ def parse(paragraph):
     # # # # # # # # # #
     # Parsing tables  #
     paragraph = re.sub(r"((\|[^\n|]+)*)(\s)*\|?(\s)*((\| ?:?-+:? ?)+)\|[ \t]*\n[ \t]*((((\|([^|\n]*))*)\|?[ \t]*\n?)+)", table_parse, paragraph)
-        
-    
+
+
     # # # # # # # # # # # #
     # Merging inline code #
     paragraph = re.sub(r"£%£%§²&(?P<i>[0-9]+)£%£%§²&", lambda x: merge_inline_code(x, inline_codes), paragraph)
@@ -433,7 +433,7 @@ def parse(paragraph):
     # # # # # # # # # # # # # #
     # Merging blocks of code  #
     paragraph = re.sub(r"&é\(\]°\(\-è\*@\|\{\)(?P<i>[0-9]+)&é\(\]°\(\-è\*@\|\{\)", lambda x: merge_block_code(x, block_codes), paragraph)
-    
+
     return paragraph
 
 # # # # #
@@ -470,7 +470,7 @@ def main():
     # Writing in the output file  #
     # Document class
     output.write("\\documentclass{" + ARGV['documentclass'] + "}\n")
-    
+
     # Packages
     # Some packages are loaded by default, the user can ask to load more packages
     # by putting them in the -p or --packages option
@@ -520,8 +520,8 @@ def main():
     # Syntax highliting
     if '`' in contents:
     # If the document is likely to contain a piece of code
-        output.write(r"\lstset{basicstyle=\ttfamily,keywordstyle=\color{RedViolet},stringstyle=\color{Green},commentstyle=\color{Gray},identifierstyle=\color{NavyBlue},numberstyle=\color{Gray},numbers=left,breaklines=true,breakatwhitespace=true,breakautoindent=true,breakindent=5pt}" + '\n') 
-    
+        output.write(r"\lstset{basicstyle=\ttfamily,keywordstyle=\color{RedViolet},stringstyle=\color{Green},commentstyle=\color{Gray},identifierstyle=\color{NavyBlue},numberstyle=\color{Gray},numbers=left,breaklines=true,breakatwhitespace=true,breakautoindent=true,breakindent=5pt}" + '\n')
+
     # Presentation
     if 'title' in ARGV:
         output.write(r"\title{" + ARGV['title'] + "}\n")
@@ -539,7 +539,7 @@ def main():
     if ARGV['tableofcontents']:
         output.write("\n\\tableofcontents\n")
     output.write("\n")
-    
+
     # Creation of the main string
     main_string = ""
 
@@ -563,7 +563,7 @@ def main():
     # Writing the main string in the output file
     output.write(main_string)
 
-    # Good by
+    # Goodbye
     output.write("\n\\end{document}")
 
     inputFile.close()
