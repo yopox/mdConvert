@@ -185,10 +185,6 @@ def replTable(m):
     # m.group(3) : reste du tableau
     # pour plus de renseignements : https://regex101.com/r/5jM44I/3
 
-    for i in range(4):
-        print(i, m.group(i))
-    print("end")
-
     firstLine = [col for col in m.group(1).split("|") if col != ""]
     centerLine = [col for col in m.group(2).split("|") if col != ""]
     nbCol = len(firstLine)
@@ -255,6 +251,7 @@ breaklines=true,
 breakatwhitespace=true,
 breakautoindent=true,
 breakindent=5pt,
+showstringspaces=false,
 }
 
 """
