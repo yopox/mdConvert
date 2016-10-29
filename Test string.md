@@ -47,8 +47,6 @@ Vivamus posuere volutpat lorem sit amet ullamcorper.**
 1. Curabitur vulputate massa id tristique gravida.
 1. Vestibulum a maximus lacus.
 
-<!--c TREE R Nam F consectetur N tortor F ut F -->
-
 | TEST                 | Hi   | this      | is            | a           |
 |----------------------|------|-----------|---------------|-------------|
 | $x\in\mathbb{R}$ !!! | ...  | é"'(-è_ç | **hello**     | Lorem ipsum |
