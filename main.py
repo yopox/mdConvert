@@ -200,11 +200,7 @@ def tree_parse(matchObj):
     # Possible options :
     #   - c : center
     option = matchObj.group('option')
-    __nodes = matchObj.group('tree').split()
-    if len(__nodes) % 2:
-        return ""
-    nodes = [[__nodes[2 * i], __nodes[2 * i + 1]]
-             for i in range(len(__nodes) >> 1)]
+    nodes = [list(x) for x in re.findall(r'([A-Z]) "([^"]*?)"', matchObj.group('tree'))]
     l = len(nodes)
     out_str = "\n\\begin{center}" if option == 'c' else ""
     out_str += "\n\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
@@ -217,7 +213,8 @@ def tree_parse(matchObj):
     def get_tree():
         def aux(i, depth):
             if nodes[i][0] == 'F':
-                return ('"' + nodes[i][1] + '"', i + 1)
+                f = nodes[i][1]
+                return ('"' + (f if f != '()' else '') + '"', i + 1)
             else:
                 (g, r1) = aux(i + 1, depth + 1)
                 (d, r2) = aux(r1, depth + 1)
@@ -227,8 +224,17 @@ def tree_parse(matchObj):
             return ""
         else:
             return re.sub("\n ?\n", "\n", ans) + "};\n"
-    out_str += get_tree() + "\\end{tikzpicture}\n" + \
-        ("\\end{center}\n" if option == 'c' else "")
+    out_str += get_tree() + "\\end{tikzpicture}\n" + ("\\end{center}\n" if option == 'c' else "")
+    return out_str
+
+def ntree_parse(matchObj):
+    # Possible options :
+    #   - c : center
+    option = matchObj.group('option')
+    tree = matchObj.group('tree')
+    out_str = "\n\\begin{center}" if option == 'c' else ""
+    out_str += "\n\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
+    out_str += tree + "};\n\\end{tikzpicture}\n" + ("\\end{center}\n" if option == 'c' else "")
     return out_str
 
 
@@ -371,6 +377,9 @@ def parse(paragraph):
     # Removing decoration
     paragraph = re.sub(r"\* \* \*", '', paragraph)
 
+    # Puting a \noindent if line begins with '!'
+    paragraph = re.sub(r"(?:^|(?<=\n))!(?!\[)(?P<remainder>.*)", r'\\noindent\n\g<remainder>', paragraph)
+
     # Parsing inline quotes
     # Uses non greedy regexp with lookbehinds/afters because for example : four o'clock in the mornin' MUSN'T be parsed !
     # One should think "hello 'hello" hello' generates and error but it juste
@@ -432,7 +441,12 @@ def parse(paragraph):
     # Trees
     # Documentation in function tree_parse()
     paragraph = re.sub(
-        r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", tree_parse, paragraph)
+        r"!\[(?:(?P<option>[a-z])-)?TREE (?P<tree>(?:(?!\]!).)*)\]!", tree_parse, paragraph)
+
+    # nTrees
+    # Documentation in function tree_parse()
+    paragraph = re.sub(
+        r"!\[(?:(?P<option>[a-z])-)?nTREE (?P<tree>(?:(?!\]!).)*)\]!", ntree_parse, paragraph)
 
     # Comments
     paragraph = re.sub(
@@ -539,7 +553,7 @@ def main():
     # If a tree is detected, tikz and his libraries are loaded
     # Note that this will require LuaLateX to compile !
     tikz_needed = re.search(
-        r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", contents) is not None
+        r"!\[(?:(?P<option>[a-z])-)?TREE (?P<tree>(?:(?!\]!).)*)\]!", contents) is not None
     if tikz_needed:
         packages.append('{tikz}')
 
