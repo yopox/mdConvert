@@ -1,12 +1,12 @@
 # Markdown BG presentation
 Mardown BG (_.mdbg_) is an improvement of the existing [Mardown](https://fr.wikipedia.org/wiki/Markdown) language.
 
-It provides some more functionnalities and syntaxes which make it possible to generate a fresh, correct and nice .tex document.
+It provides some more functionnalities and syntaxes which make it possible to generate a fresh, correct and nice _.tex_ document.
 
-However you can find in the vanilla branch a .md -> .tex version of this project if you don't need Markdown BG improvements.
+However you can find in the vanilla branch a _.md_ -> _.tex_ version of this project if you don't need Markdown BG improvements.
 
 # mdbgConvert
-Tool to convert .mdbg to .tex
+Tool to convert _.mdbg_ to _.tex_
 
 **What's handled :**
   - bold, italic, strikethrough
