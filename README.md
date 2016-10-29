@@ -1,15 +1,18 @@
 # mdConvert
 Tool to convert .md to .tex
 
-**Whats is handled :**
+**What's handled :**
   - bold, italic, strikethrough
   - code (inline with `\verb` and block with `lstlistings`)
   - itemize and enumerate with a maximum of 4 levels (can be increased), however those two can't mix with each other
   - tables
   - quotations (inline and block, with or without a reference)
   - binary trees with TikZ
-  - links
+  - links (can be improved though, c.f. Issue)
 
+** TO-DO :**
+  - Footnote references
+  - Images
 **Syntax for binary trees :** 
 
 `<!-- TREE R 1 N 2 F 3 F 4 F 5 -->` to obtain 
