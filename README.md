@@ -13,6 +13,7 @@ Tool to convert .md to .tex
 **TO-DO :**
   - Footnote references
   - Images
+
 **Syntax for binary trees :** 
 
 `<!-- TREE R 1 N 2 F 3 F 4 F 5 -->` to obtain 
