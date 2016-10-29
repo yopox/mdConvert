@@ -237,7 +237,6 @@ def quote_parse(matchObj):
     quotes = re.split("(?:^|\n)> (.*)", quotes)
     try:
         # For quotations with a reference
-        print("An epigraph has been found!")
         reference = matchObj.group('reference')
         out = ''
         for quote in quotes:
@@ -250,7 +249,7 @@ def quote_parse(matchObj):
         for quote in quotes:
             if quote != '':
                 out += quote + r" \\ "
-        return out + "\\end{displayquote}\n\\medskip\n"
+        return out[0:-4] + "\n\\end{displayquote}\n\\medskip\n"
 
 
 def itemize_parse(i, matchObj):
@@ -262,7 +261,7 @@ def itemize_parse(i, matchObj):
     # This functions does the work for only ONE level, of depth i
     out = (("    " * i + "- ") if i != 1 else "") + "\\begin{itemize}\n"
     for item in re.findall(r"(?:^(?:[ ]{4})+|\n(?:[ ]{4})+)- ((?:(?!\n[ ]{4,}- )(?:.|\n))*)", itemize):
-        out += (r"\item[$\bullet$] " if item !=
+        out += (r"\item " if item !=
                 '' and item[0:min(len(item), 6)] != "\\begin" else "") + item + '\n'
     out += r"\end{itemize}"
     return out
