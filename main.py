@@ -195,43 +195,6 @@ def striken(matchObj):
     else:
         return strike
 
-
-def tree_parse(matchObj):
-    # Possible options :
-    #   - c : center
-    option = matchObj.group('option')
-    __nodes = matchObj.group('tree').split()
-    if len(__nodes) % 2:
-        return ""
-    nodes = [[__nodes[2 * i], __nodes[2 * i + 1]]
-             for i in range(len(__nodes) >> 1)]
-    l = len(nodes)
-    out_str = "\n\\begin{center}" if option == 'c' else ""
-    out_str += "\n\\begin{tikzpicture}[nodes={circle, draw}]\n\\graph[binary tree layout, fresh nodes]{\n"
-    # The package used to draw trees is TikZ and that requiers LuaLaTeX to compile (the algorithm aiming at computing distance
-    # between elements of the graphs is written in Lua)
-    # The traversal is a pre-order traversal
-    # If you don't understand that code you should go to math spé in Lycée
-    # Henri IV and ask E. T.
-
-    def get_tree():
-        def aux(i, depth):
-            if nodes[i][0] == 'F':
-                return ('"' + nodes[i][1] + '"', i + 1)
-            else:
-                (g, r1) = aux(i + 1, depth + 1)
-                (d, r2) = aux(r1, depth + 1)
-                return ('"' + nodes[i][1] + '"' + " -- {" + g + "," + d + "}", r2)
-        (ans, r) = aux(0, 1)
-        if r != l:
-            return ""
-        else:
-            return re.sub("\n ?\n", "\n", ans) + "};\n"
-    out_str += get_tree() + "\\end{tikzpicture}\n" + \
-        ("\\end{center}\n" if option == 'c' else "")
-    return out_str
-
-
 def quote_parse(matchObj):
     quotes = matchObj.group('quote')
     quotes = re.split("(?:^|\n)> (.*)", quotes)
@@ -371,6 +334,9 @@ def parse(paragraph):
     # Removing decoration
     paragraph = re.sub(r"\* \* \*", '', paragraph)
 
+    # Puting a \noindent if line begins with '!'
+    paragraph = re.sub(r"(?:^|(?<=\n))!(?P<remainder>.*)", r'\\noindent\n\g<remainder>', paragraph)
+
     # Parsing inline quotes
     # Uses non greedy regexp with lookbehinds/afters because for example : four o'clock in the mornin' MUSN'T be parsed !
     # One should think "hello 'hello" hello' generates and error but it juste
@@ -428,11 +394,6 @@ def parse(paragraph):
     # when x is a specific key word in LaTeX (and x != _)
     fragments[i] = re.sub("&", r"\&", fragments[i])
     fragments[i] = re.sub("#", r"\#", fragments[i])
-
-    # Trees
-    # Documentation in function tree_parse()
-    paragraph = re.sub(
-        r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", tree_parse, paragraph)
 
     # Comments
     paragraph = re.sub(
@@ -536,20 +497,9 @@ def main():
                 "{hyperref}",
                 "[official]{eurosym}"] + additionnal_packages
 
-    # If a tree is detected, tikz and his libraries are loaded
-    # Note that this will require LuaLateX to compile !
-    tikz_needed = re.search(
-        r"<!\-\-(?P<option>[a-z]?) TREE (?P<tree>(?:(?!\-\->).)*) \-\->", contents) is not None
-    if tikz_needed:
-        packages.append('{tikz}')
-
     for package in packages:
         output.write(r"\usepackage" + package + '\n')
-        if 'tikz' in package:
-            # TikZ libraries for trees
-            output.write(
-                "\\usetikzlibrary{graphs,graphdrawing,arrows.meta}\n\\usegdlibrary{trees}\n")
-        elif 'geometry' in package:
+        if 'geometry' in package:
             # Changing the margins
             output.write(
                 "\\geometry{top=2cm, bottom=2cm, left=3cm, right=3cm}\n")
