@@ -1,5 +1,5 @@
 # Markdown BG presentation
-Mardown BG (_.mdgb_) is an improvement of the existing [Mardown](https://fr.wikipedia.org/wiki/Markdown) language.
+Mardown BG (_.mdbg_) is an improvement of the existing [Mardown](https://fr.wikipedia.org/wiki/Markdown) language.
 
 It provides some more functionnalities and syntaxes which make it possible to generate a fresh, correct and nice .tex document.
 
