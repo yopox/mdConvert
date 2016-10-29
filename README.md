@@ -1,5 +1,12 @@
-# mdConvert
-Tool to convert .md to .tex
+# Markdown BG presentation
+Mardown BG (_.mdgb_) is an improvement of the existing [Mardown](https://fr.wikipedia.org/wiki/Markdown) language.
+
+It provides some more functionnalities and syntaxes which make it possible to generate a fresh, correct and nice .tex document.
+
+However you can find in the vanilla branch a .md -> .tex version of this project if you don't need Markdown BG improvements.
+
+# mdbgConvert
+Tool to convert .mdbg to .tex
 
 **What's handled :**
   - bold, italic, strikethrough
@@ -7,7 +14,7 @@ Tool to convert .md to .tex
   - itemize and enumerate with a maximum of 4 levels (can be increased), however those two can't mix with each other
   - tables
   - quotations (inline and block, with or without a reference)
-  - binary trees with TikZ
+  - binary trees with TikZ (and soon every tree)
   - links (can be improved though, c.f. Issue)
 
 **TO-DO :**
