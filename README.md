@@ -10,7 +10,7 @@ Tool to convert .md to .tex
   - binary trees with TikZ
   - links (can be improved though, c.f. Issue)
 
-** TO-DO :**
+**TO-DO :**
   - Footnote references
   - Images
 **Syntax for binary trees :** 
