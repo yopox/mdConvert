@@ -334,9 +334,6 @@ def parse(paragraph):
     # Removing decoration
     paragraph = re.sub(r"\* \* \*", '', paragraph)
 
-    # Puting a \noindent if line begins with '!'
-    paragraph = re.sub(r"(?:^|(?<=\n))!(?P<remainder>.*)", r'\\noindent\n\g<remainder>', paragraph)
-
     # Parsing inline quotes
     # Uses non greedy regexp with lookbehinds/afters because for example : four o'clock in the mornin' MUSN'T be parsed !
     # One should think "hello 'hello" hello' generates and error but it juste
